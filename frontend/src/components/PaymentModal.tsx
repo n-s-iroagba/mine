@@ -235,7 +235,7 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
 
     setIsSubmitting(true);
     try {
-      await miningSubscriptionService.cancelSubscription(subscriptionIdToCancel);
+      // await miningSubscriptionService.cancelSubscription(subscriptionIdToCancel);
       onClose();
       onSuccess(); // Refresh the parent component
     } catch (err) {
