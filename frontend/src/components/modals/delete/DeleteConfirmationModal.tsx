@@ -40,7 +40,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
 
         <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
           <Button
-            variant="danger"
+            variant="destructive"
             onClick={onConfirm}
             loading={loading}
             disabled={loading}
