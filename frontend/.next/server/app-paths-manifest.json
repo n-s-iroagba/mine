@@ -1,7 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/miner/contracts/page": "app/miner/contracts/page.js",
-  "/miner/dashboard/page": "app/miner/dashboard/page.js",
-  "/miner/kyc/page": "app/miner/kyc/page.js"
-}
