@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Failed to get current user:', error);
         // Only logout if there's a specific authentication error
         // Don't automatically logout for all errors
-        if (error instanceof Error && error.message.includes('auth') || error.message.includes('token')) {
+        if (error instanceof Error && error.message.includes('auth') ) {
           authService.logout();
         }
       } finally {
