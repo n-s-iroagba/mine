@@ -20,7 +20,7 @@ export function UpdateEarningsModal({
   onClose, 
   onSuccess 
 }: UpdateEarningsModalProps) {
-  const [actionType, setActionType] = useState<'set' | 'add' | 'subtract'>('set');
+  const [actionType, setActionType] = useState<'set' | 'credit' | 'debit'>('set');
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,8 +36,8 @@ export function UpdateEarningsModal({
       return;
     }
 
-    if (actionType === 'subtract' && numericAmount > subscription.earnings) {
-      setError('Subtraction amount cannot exceed current earnings');
+    if (actionType === 'debit' && numericAmount > subscription.earnings) {
+      setError('debition amount cannot exceed current earnings');
       return;
     }
 
@@ -47,8 +47,8 @@ export function UpdateEarningsModal({
     try {
       await miningSubscriptionService.updateEarnings(
         subscription.id, 
-        numericAmount, 
-        actionType
+       { earnings:numericAmount, 
+        actionType:actionType as 'credit'|'debit'}
       );
       onSuccess();
     } catch (err) {
@@ -69,10 +69,10 @@ export function UpdateEarningsModal({
     switch (actionType) {
       case 'set':
         return 'Set earnings to a specific amount';
-      case 'add':
-        return 'Add to current earnings';
-      case 'subtract':
-        return 'Subtract from current earnings';
+      case 'credit':
+        return 'credit to current earnings';
+      case 'debit':
+        return 'debit from current earnings';
       default:
         return '';
     }
@@ -93,14 +93,14 @@ export function UpdateEarningsModal({
           <div className="space-y-4">
             <div>
               <Label htmlFor="actionType">Action Type</Label>
-              <Select value={actionType} onValueChange={(value:string ) => setActionType(value as 'set' | 'add' | 'subtract' )}>
+              <Select value={actionType} onValueChange={(value:string ) => setActionType(value as 'set' | 'credit' | 'debit' )}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="set">Set Earnings</SelectItem>
-                  <SelectItem value="add">Add to Earnings</SelectItem>
-                  <SelectItem value="subtract">Subtract from Earnings</SelectItem>
+                  <SelectItem value="credit">credit to Earnings</SelectItem>
+                  <SelectItem value="debit">debit from Earnings</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">{getActionDescription()}</p>
@@ -138,7 +138,7 @@ export function UpdateEarningsModal({
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                variant="primary"
+           
               >
                 {isLoading ? 'Updating...' : 'Update Earnings'}
               </Button>

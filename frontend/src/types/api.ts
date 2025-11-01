@@ -201,6 +201,7 @@ export interface CreateMiningSubscriptionData {
 
 export interface UpdateEarningsData {
   earnings: number;
+  actionType:'debit'|'credit'
 }
 
 export interface MinerDashboard {
