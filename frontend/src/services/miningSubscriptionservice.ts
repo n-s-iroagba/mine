@@ -8,6 +8,7 @@ import {
   MiningSubscriptionWithTransaction,
 
 
+
 } from '../types/api';
 import { MiningSubscription } from '@/types/subscription';
 
@@ -51,7 +52,7 @@ export const miningSubscriptionService = {
   // ✅ Create new subscription (admin only)
   async createSubscription(data:any): Promise<MiningSubscriptionWithTransaction> {
     const response = await apiService.post<ApiResponse<MiningSubscriptionWithTransaction>>(
-      API_ROUTES.subscriptions.create,
+      API_ROUTES.subscriptions.create(1),
       data
     );
     if (response.success && response.data) return response.data;
