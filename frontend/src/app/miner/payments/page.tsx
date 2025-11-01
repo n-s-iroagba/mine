@@ -31,7 +31,7 @@ export default function PaymentsPage() {
     try {
       setLoading(true);
       const [txData, walletData] = await Promise.all([
-        transactionService.getTransactionsByMinerId(user.id),
+        transactionService.getTransactionsByMinerId(user.roleId),
         adminWalletService.getActiveWallets()
       ]);
       setTransactions(txData);
