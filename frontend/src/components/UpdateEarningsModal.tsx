@@ -41,14 +41,14 @@ export function CreditDebitModal({
 
     try {
       if (actionType === 'credit') {
-        await miningSubscriptionService.creditDeposit(subscription.id, numericAmount);
-      } else {
-        if (numericAmount > subscription.amountDeposited) {
-          setError('Debit amount cannot exceed current deposited amount');
-          setIsLoading(false);
-          return;
-        }
-        await miningSubscriptionService.debitDeposit(subscription.id, numericAmount);
+      //   await miningSubscriptionService.creditDeposit(subscription.id, numericAmount);
+      // } else {
+      //   if (numericAmount > subscription.amountDeposited) {
+      //     setError('Debit amount cannot exceed current deposited amount');
+      //     setIsLoading(false);
+      //     return;
+      //   }
+      //   await miningSubscriptionService.debitDeposit(subscription.id, numericAmount);
       }
       onSuccess();
     } catch (err) {
