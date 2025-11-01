@@ -5,9 +5,10 @@ import { useAuth } from '../../../context/AuthContext';
 import { useApiQuery } from '../../../hooks/useApi';
 import { formatCurrency } from '../../../lib/utils';
 import { miningSubscriptionService, kycService, kycFeeService, bankService, adminWalletService } from '../../../services';
-import { MiningSubscription } from '../../../types/api';
+import { MiningSubscription } from '@/types/subscription';
 
-export const uploadFile = async (
+
+const uploadFile = async (
   file: File,
   type: 'thumbnail' | 'video' | 'image'
 ): Promise<string> => {
@@ -65,7 +66,7 @@ const validateFile = (file: File, maxSizeMB: number = 10, allowedTypes: string[]
 
 export default function KYCPage() {
   const { user } = useAuth();
-  const minerId = user?.id;
+  const minerId = user?.roleId;
 
   const [activeStep, setActiveStep] = useState<'check' | 'kyc' | 'fee' | 'payment' | 'complete'>('check');
   const [idCardFile, setIdCardFile] = useState<File | null>(null);
