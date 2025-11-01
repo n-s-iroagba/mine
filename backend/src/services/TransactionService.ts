@@ -2,6 +2,7 @@ import { TransactionRepository, MiningSubscriptionRepository, UserRepository } f
 import { AppError, BaseService, CryptoHelper, EmailHelper, NotFoundError, ValidationError } from './utils';
 
 import { TransactionAttributes } from '../models/Transaction';
+import Miner from '../models/Miner';
 
 export interface CreateTransactionData {
   amountInUSD: number;
@@ -28,7 +29,7 @@ export class TransactionService extends BaseService {
 
   async createTransaction(transactionData: CreateTransactionData): Promise<TransactionAttributes> {
     try {
-      this.logInfo('Creating transaction', { 
+      this.logInfo('Creating transaction', {
         minerId: transactionData.minerId,
         entity: transactionData.entity,
         amount: transactionData.amountInUSD
@@ -62,7 +63,7 @@ export class TransactionService extends BaseService {
 
       const transaction = await this.transactionRepository.create({
         ...transactionData,
-    
+
         status: 'initialized',
       });
 
@@ -125,10 +126,10 @@ export class TransactionService extends BaseService {
         throw new NotFoundError('Transaction');
       }
 
-  
+
 
       const updatedTransaction = await this.transactionRepository.updateStatus(id, statusData.status);
-      
+
       if (!updatedTransaction) {
         throw new AppError('Failed to update transaction status');
       }
@@ -140,13 +141,14 @@ export class TransactionService extends BaseService {
 
       // Send email notification for successful transactions
       if (statusData.status === 'successful') {
-        const miner = await this.userRepository.findById(transaction.minerId);
+        const miner = await Miner.findByPk(updatedTransaction.minerId)
+        const user = await this.userRepository.findById(miner.userId);
         if (miner) {
           await EmailHelper.sendEmail({
-            to: miner.email,
+            to: user.email,
             subject: 'Payment Confirmed',
             html: EmailHelper.generatePaymentConfirmationEmail(
-              `${miner.firstName} ${miner.lastName}`,
+              `${miner.firstname} ${miner.lastname}`,
               transaction.amountInUSD,
               transaction.entity
             ),
@@ -154,7 +156,7 @@ export class TransactionService extends BaseService {
         }
       }
 
-  
+
       return updatedTransaction!.get({ plain: true });
     } catch (error) {
       this.handleError(error, 'Failed to update transaction status');
@@ -165,7 +167,7 @@ export class TransactionService extends BaseService {
     try {
       this.logInfo('Fetching transactions by status', { status });
 
-    
+
 
       const transactions = await this.transactionRepository.findByStatus(status);
       return transactions.map(transaction => transaction.get({ plain: true }));

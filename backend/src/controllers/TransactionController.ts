@@ -27,9 +27,9 @@ export class TransactionController extends BaseController {
     try {
    
       
-      const validatedData = validateData(createTransactionSchema, req.body);
+      const validatedData =validateData(createTransactionSchema, req.body);
       
-      const transaction = await this.transactionService.createTransaction(validatedData);
+      const transaction = await this.transactionService.createTransaction(req.body);
       
       return this.created(res, 'Transaction created successfully', transaction);
     } catch (error) {
@@ -85,9 +85,9 @@ export class TransactionController extends BaseController {
    
       
       const transactionId = parseInt(req.params.id);
-      const validatedData = validateData(updateTransactionStatusSchema, req.body);
+      const validatedData =validateData(updateTransactionStatusSchema, req.body);
       
-      const transaction = await this.transactionService.updateTransactionStatus(transactionId, validatedData);
+      const transaction = await this.transactionService.updateTransactionStatus(transactionId, req.body);
       
       return this.success(res, 'Transaction status updated successfully', transaction);
     } catch (error) {

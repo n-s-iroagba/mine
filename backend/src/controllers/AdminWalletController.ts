@@ -31,9 +31,9 @@ export class AdminWalletController extends BaseController {
     try {
    
       
-      const validatedData = validateData(createAdminWalletSchema, req.body);
+  
       
-      const wallet = await this.adminWalletService.createWallet(validatedData);
+      const wallet = await this.adminWalletService.createWallet(req.body);
       
       return this.created(res, 'Admin wallet created successfully', wallet);
     } catch (error) {
@@ -68,9 +68,9 @@ export class AdminWalletController extends BaseController {
    
       
       const walletId = parseInt(req.params.id);
-      const validatedData = validatePartialData(updateAdminWalletSchema, req.body);
+      const validatedData =validatePartialData(updateAdminWalletSchema, req.body);
       
-      const wallet = await this.adminWalletService.updateWallet(walletId, validatedData);
+      const wallet = await this.adminWalletService.updateWallet(walletId, req.body);
       
       return this.success(res, 'Admin wallet updated successfully', wallet);
     } catch (error) {

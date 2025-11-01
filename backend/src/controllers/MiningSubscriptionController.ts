@@ -74,9 +74,9 @@ export class MiningSubscriptionController extends BaseController {
    
       
       const subscriptionId = parseInt(req.params.id);
-      const validatedData = validateData(updateEarningsSchema, req.body);
+      const validatedData =validateData(updateEarningsSchema, req.body);
       
-      const subscription = await this.miningSubscriptionService.updateEarnings(subscriptionId, validatedData);
+      const subscription = await this.miningSubscriptionService.updateEarnings(subscriptionId, req.body);
       
       return this.success(res, 'Earnings updated successfully', subscription);
     } catch (error) {

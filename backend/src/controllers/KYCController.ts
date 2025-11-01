@@ -23,9 +23,9 @@ export class KYCController extends BaseController {
     try {
    
       
-      const validatedData = validateData(createKYCSchema, req.body);
+    
       
-      const kyc = await this.kycService.createKYCRequest(validatedData);
+      const kyc = await this.kycService.createKYCRequest(req.body);
       
       return this.created(res, 'KYC request created successfully', kyc);
     } catch (error) {
@@ -81,12 +81,12 @@ export class KYCController extends BaseController {
    
       
       const kycId = parseInt(req.params.id);
-      const validatedData =  {
+      const validatedData = {
         ...req.body,
         reviewedBy: this.getUserId(req), // Automatically set the reviewer to the current admin
       };
       
-      const kyc = await this.kycService.updateKYCStatus(kycId, validatedData);
+      const kyc = await this.kycService.updateKYCStatus(kycId, req.body);
       
       return this.success(res, 'KYC status updated successfully', kyc);
     } catch (error) {

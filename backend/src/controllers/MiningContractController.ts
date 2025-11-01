@@ -23,9 +23,9 @@ export class MiningContractController extends BaseController {
     try {
    
       
-      const validatedData = validateData(createMiningContractSchema, req.body);
+      const validatedData =validateData(createMiningContractSchema, req.body);
       
-      const contract = await this.miningContractService.createContract(validatedData);
+      const contract = await this.miningContractService.createContract(req.body);
       
       return this.created(res, 'Mining contract created successfully', contract);
     } catch (error) {

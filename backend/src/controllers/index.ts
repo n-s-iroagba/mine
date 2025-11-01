@@ -1,6 +1,5 @@
 export { BaseController } from './BaseController';
 export { AuthController } from './AuthController';
-export { UserController } from './UserController';
 export { AdminWalletController } from './AdminWalletController';
 export { MiningServerController } from './MiningServerController';
 export { MiningContractController } from './MiningContractController';

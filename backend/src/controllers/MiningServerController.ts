@@ -23,9 +23,9 @@ export class MiningServerController extends BaseController {
     try {
    
       
-      const validatedData = validateData(createMiningServerSchema, req.body);
+      const validatedData =validateData(createMiningServerSchema, req.body);
       
-      const server = await this.miningServerService.createServer(validatedData);
+      const server = await this.miningServerService.createServer(req.body);
       
       return this.created(res, 'Mining server created successfully', server);
     } catch (error) {

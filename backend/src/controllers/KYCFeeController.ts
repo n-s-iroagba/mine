@@ -21,9 +21,9 @@ export class KYCFeeController extends BaseController {
     try {
    
       
-      const validatedData = validateData(createKYCFeeSchema, req.body);
+      const validatedData =validateData(createKYCFeeSchema, req.body);
       
-      const kycFee = await this.kycFeeService.createKYCFee(validatedData);
+      const kycFee = await this.kycFeeService.createKYCFee(req.body);
       
       return this.created(res, 'KYC fee created successfully', kycFee);
     } catch (error) {

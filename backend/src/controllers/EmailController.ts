@@ -22,7 +22,7 @@ export class EmailController extends BaseController {
 
   constructor() {
     super();
-    this.emailService = new EmailService();
+    this.emailService = new EmailService('');
   }
 
   sendEmail = async (req: Request, res: Response): Promise<Response | void> => {
@@ -42,12 +42,12 @@ export class EmailController extends BaseController {
     try {
    
       
-      const validatedData = validateData(sendBulkEmailSchema, req.body);
+      const validatedData =validateData(sendBulkEmailSchema, req.body);
       
       const result = await this.emailService.sendBulkEmail(
-        validatedData.userIds,
-        validatedData.subject,
-        validatedData.message
+        req.body.userIds,
+        req.body.subject,
+        req.body.message
       );
       
       return this.success(res, 'Bulk email sent successfully', result);
@@ -60,11 +60,11 @@ export class EmailController extends BaseController {
     try {
    
       
-      const validatedData = validateData(sendGroupEmailSchema, req.body);
+      const validatedData =validateData(sendGroupEmailSchema, req.body);
       
       const result = await this.emailService.sendEmailToAllMiners(
-        validatedData.subject,
-        validatedData.message
+        req.body.subject,
+        req.body.message
       );
       
       return this.success(res, 'Email sent to all miners successfully', result);
@@ -77,11 +77,11 @@ export class EmailController extends BaseController {
     try {
    
       
-      const validatedData = validateData(sendGroupEmailSchema, req.body);
+      const validatedData =validateData(sendGroupEmailSchema, req.body);
       
       const result = await this.emailService.sendEmailToAllAdmins(
-        validatedData.subject,
-        validatedData.message
+        req.body.subject,
+        req.body.message
       );
       
       return this.success(res, 'Email sent to all admins successfully', result);

@@ -12,7 +12,7 @@ export function HeroSection() {
           </div>
 
           <h1 className="mb-6 text-balance text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
-            Mine Bitcoin with{" "}
+            Mine Digital Assets with{" "}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Satoshi Vertex
             </span>

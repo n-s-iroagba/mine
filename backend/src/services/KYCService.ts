@@ -2,6 +2,8 @@ import { KYCRepository, UserRepository, KYCFeeRepository } from '../repositories
 import { AppError, BaseService,  ConflictError,  EmailHelper, NotFoundError, ValidationError } from './utils';
 
 import { KYCAttributes } from '../models/KYC';
+import Miner from '../models/Miner';
+import User from '../models/User';
 
 export interface CreateKYCData {
   minerId: number;
@@ -133,12 +135,13 @@ export class KYCService extends BaseService {
 
       // Send email notification for approved KYC
       if (statusData.status === 'successful') {
-        const miner = await this.userRepository.findById(kyc.minerId);
+        const miner = await Miner.findByPk(kyc.minerId);
+        const user = await User.findByPk(miner.userId)
         if (miner) {
           await EmailHelper.sendEmail({
-            to: miner.email,
+            to: user.email,
             subject: 'KYC Verification Approved',
-            html: EmailHelper.generateKYCApprovedEmail(`${miner.firstName} ${miner.lastName}`),
+            html: EmailHelper.generateKYCApprovedEmail(`${miner.firstname} ${miner.lastname}`),
           });
         }
       }
