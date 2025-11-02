@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '../../components/ui/button';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
-import { useAuth } from '@/context/AuthContext';
+import {  useRequiredAuth } from '@/context/AuthContext';
 
 export default function AdminLayout({
   children,
@@ -13,7 +13,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading } = useRequiredAuth();
   const pathname = usePathname();
 
   if (loading) {
@@ -24,19 +24,19 @@ export default function AdminLayout({
     );
   }
 
-  // if (!user || user.role !== 'admin') {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <div className="text-center">
-  //         <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-  //         <p className="text-gray-600 mb-4">Admin access required</p>
-  //         <Link href="/">
-  //           <Button>Return Home</Button>
-  //         </Link>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-4">Admin access required</p>
+          <Link href="/">
+            <Button>Return Home</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
@@ -122,7 +122,7 @@ export default function AdminLayout({
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">
-                Admin name goes here
+                {user.username}
                 </p>
              
               </div>

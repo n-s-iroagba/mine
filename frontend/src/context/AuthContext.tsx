@@ -13,6 +13,7 @@ export interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
+  setUser:any
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
@@ -82,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     register,
     logout,
+    setUser,
     isAuthenticated: !!user,
   };
 
@@ -100,7 +102,7 @@ export const useAuth = () => {
 export const useRequiredAuth = () => {
   const context = useAuth();
   if (!context.user) {
-    throw new Error('useRequiredAuth must be used when user is authenticated');
+      return useAuth()
   }
   return context as AuthContextType & { user: AuthUser };
 };

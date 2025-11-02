@@ -52,8 +52,11 @@ export class AuthController {
 
         const cookieOptions = getCookieOptions()
         console.log('Setting refresh token cookie with options:', cookieOptions)
+      const clearOptions = { ...getCookieOptions() };
+delete clearOptions.maxAge; // ✅ remove deprecated field
 
-        res.cookie('refreshToken', verified.refreshToken, cookieOptions)
+res.clearCookie('refreshToken', clearOptions as any);
+        res.cookie('refreshToken', verified.refreshToken, cookieOptions as any)
       res.status(200).json({
         success: true,
         data: result,
@@ -72,8 +75,11 @@ export class AuthController {
 
         const cookieOptions = getCookieOptions()
         console.log('Setting refresh token cookie with options:', cookieOptions)
+ const clearOptions = { ...getCookieOptions() };
+delete clearOptions.maxAge; // ✅ remove deprecated field
 
-        res.cookie('refreshToken', verified.refreshToken, cookieOptions)
+res.clearCookie('refreshToken', clearOptions as any);
+        res.cookie('refreshToken', verified.refreshToken, cookieOptions as any)
       res.status(200).json({
         success: true,
         data: result,

@@ -82,7 +82,7 @@ export default function TransactionsPage() {
       render: (value: any, row: Transaction) => (
         <div>
           <p className="font-medium text-gray-900">
-            {row.miner?.firstName} {row.miner?.lastName}
+            {row.miner?.firstname} {row.miner?.lastname}
           </p>
           <p className="text-sm text-gray-600">{row.miner?.email}</p>
         </div>

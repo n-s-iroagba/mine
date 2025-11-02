@@ -21,7 +21,7 @@ export class KYCRepository extends BaseRepository<KYC> implements IKYCRepository
         {include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName', 'phone'],
+            attributes: ['id', 'email', 'firstname', 'lastname', 'phone'],
           },
         ],
       });
@@ -37,11 +37,11 @@ export class KYCRepository extends BaseRepository<KYC> implements IKYCRepository
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName', 'phone'],
+            attributes: ['id', 'email', 'firstname', 'lastname', 'phone'],
           },
           {
             association: 'reviewer',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
+            attributes: ['id', 'email', 'firstname', 'lastname'],
             required: false,
           },
         ],
@@ -84,11 +84,11 @@ export class KYCRepository extends BaseRepository<KYC> implements IKYCRepository
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName', 'phone'],
+            attributes: ['id', 'email', 'firstname', 'lastname', 'phone'],
           },
           {
             association: 'reviewer',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
+            attributes: ['id', 'email', 'firstname', 'lastname'],
             required: false,
           },
         ],

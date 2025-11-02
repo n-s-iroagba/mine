@@ -14,7 +14,7 @@ class TransactionRepository extends BaseRepository_1.BaseRepository {
                 include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstName', 'lastName'],
+                        attributes: ['id', 'email', 'firstname', 'lastname'],
                     },
                 ],
                 order: [['createdAt', 'DESC']],
@@ -31,7 +31,7 @@ class TransactionRepository extends BaseRepository_1.BaseRepository {
                 include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstName', 'lastName'],
+                        attributes: ['id', 'email', 'firstname', 'lastname'],
                     },
                 ],
                 order: [['createdAt', 'DESC']],
@@ -55,7 +55,7 @@ class TransactionRepository extends BaseRepository_1.BaseRepository {
                 include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstName', 'lastName'],
+                        attributes: ['id', 'email', 'firstname', 'lastname'],
                     },
                 ],
                 order: [['createdAt', 'DESC']],

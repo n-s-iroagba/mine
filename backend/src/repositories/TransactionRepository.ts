@@ -23,7 +23,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
+            attributes: ['id', 'email', 'firstname', 'lastname'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -41,7 +41,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
+            attributes: ['id', 'email', 'firstname', 'lastname'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -65,7 +65,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
+            attributes: ['id', 'email', 'firstname', 'lastname'],
           },
         ],
         order: [['createdAt', 'DESC']],

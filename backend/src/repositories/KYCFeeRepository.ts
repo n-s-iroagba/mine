@@ -20,7 +20,7 @@ export class KYCFeeRepository extends BaseRepository<KYCFee> implements IKYCFeeR
        { include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
+            attributes: ['id', 'email', 'firstname', 'lastname'],
           },
         ],
       });
@@ -36,7 +36,7 @@ export class KYCFeeRepository extends BaseRepository<KYCFee> implements IKYCFeeR
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
+            attributes: ['id', 'email', 'firstname', 'lastname'],
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -63,7 +63,7 @@ export class KYCFeeRepository extends BaseRepository<KYCFee> implements IKYCFeeR
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
+            attributes: ['id', 'email', 'firstname', 'lastname'],
           },
         ],
         order: [['createdAt', 'DESC']],

@@ -12,7 +12,7 @@ class KYCRepository extends BaseRepository_1.BaseRepository {
             return await this.findOne({ minerId }, { include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstName', 'lastName', 'phone'],
+                        attributes: ['id', 'email', 'firstname', 'lastname', 'phone'],
                     },
                 ],
             });
@@ -28,11 +28,11 @@ class KYCRepository extends BaseRepository_1.BaseRepository {
                 include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstName', 'lastName', 'phone'],
+                        attributes: ['id', 'email', 'firstname', 'lastname', 'phone'],
                     },
                     {
                         association: 'reviewer',
-                        attributes: ['id', 'email', 'firstName', 'lastName'],
+                        attributes: ['id', 'email', 'firstname', 'lastname'],
                         required: false,
                     },
                 ],
@@ -67,11 +67,11 @@ class KYCRepository extends BaseRepository_1.BaseRepository {
                 include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstName', 'lastName', 'phone'],
+                        attributes: ['id', 'email', 'firstname', 'lastname', 'phone'],
                     },
                     {
                         association: 'reviewer',
-                        attributes: ['id', 'email', 'firstName', 'lastName'],
+                        attributes: ['id', 'email', 'firstname', 'lastname'],
                         required: false,
                     },
                 ],

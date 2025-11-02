@@ -25,7 +25,7 @@ export default function MinerDashboard() {
     
     try {
       setLoading(true);
-      const data = await miningSubscriptionService.getMinerDashboard(user?.roleId);
+      const data = await miningSubscriptionService.getMinerDashboard(Number(user?.roleId));
       setDashboardData(data);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);

@@ -67,7 +67,7 @@ export default function KYCManagementPage() {
       render: (value: any, row: KYC) => (
         <div>
           <p className="font-medium text-gray-900">
-            {row.miner?.firstName} {row.miner?.lastName}
+            {row.miner?.firstname} {row.miner?.lastname}
           </p>
           <p className="text-sm text-gray-600">{row.miner?.email}</p>
           <p className="text-xs text-gray-500">ID: {row.miner?.id}</p>
@@ -133,7 +133,7 @@ export default function KYCManagementPage() {
         row.reviewer ? (
           <div>
             <p className="text-sm font-medium">
-              {row.reviewer.firstName} {row.reviewer.lastName}
+              {row.reviewer.firstname} {row.reviewer.lastname}
             </p>
             <p className="text-xs text-gray-500">
               {row.reviewedAt && formatDate(row.reviewedAt)}

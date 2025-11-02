@@ -1,15 +1,14 @@
 export const getCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === 'production'
 
-  const options = {
+  const options= {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax' | 'strict',
-    domain: isProduction ? process.env.COOKIE_DOMAIN : undefined,
-    // domain:'http://localhost:5000',
+    secure: isProduction, // must be true when using HTTPS
+    sameSite: isProduction ? 'none' : 'lax', // 'none' allows cross-domain cookies
+    domain: isProduction ? process.env.COOKIE_DOMAIN : undefined, // e.g. '.example.com'
+    path: '/',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/', // Explicitly set path
-  }
+  };
 
   // Debug logging
   console.log('Cookie options:', {

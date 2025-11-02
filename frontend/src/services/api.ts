@@ -79,7 +79,7 @@ class ApiService {
 
     // Main API client
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+      baseURL: process.env.NODE_ENV==='production' ?'https://mining-f8mz.onrender.com/api': 'http://localhost:5000/api',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ class ApiService {
     // Refresh token client
     this.refreshClient = axios.create({
       baseURL: process.env.NODE_ENV === 'production' 
-        ? process.env.REACT_APP_API_BASE 
+        ? 'https://mining-f8mz.onrender.com/api' 
         : 'http://localhost:5000/api',
       timeout: 10000,
       withCredentials: true

@@ -20,8 +20,8 @@ export interface LoginCredentials {
 export interface RegisterData {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  firstname: string;
+  lastname: string;
   phone?: string;
   role?: 'admin' | 'miner';
 }
@@ -30,8 +30,8 @@ export interface AuthResponse {
   user: {
     id: number;
     email: string;
-    firstName: string;
-    lastName: string;
+    firstname: string;
+    lastname: string;
     phone?: string;
     role: 'admin' | 'miner';
     isActive: boolean;
@@ -45,8 +45,8 @@ export interface AuthResponse {
 export interface User {
   id: number;
   email: string;
-  firstName: string;
-  lastName: string;
+  firstname: string;
+  lastname: string;
   phone?: string;
   role: 'admin' | 'miner';
   isActive: boolean;
@@ -55,8 +55,8 @@ export interface User {
 }
 
 export interface UpdateUserData {
-  firstName?: string;
-  lastName?: string;
+  firstname?: string;
+  lastname?: string;
   phone?: string;
 }
 
@@ -179,8 +179,8 @@ export interface MiningSubscription {
   updatedAt: string;
   miningContract?: MiningContract;
   miner?:{
-    firstName:string
-    lastName:string
+    firstname:string
+    lastname:string
     country:string
     email:string
     phone:string
