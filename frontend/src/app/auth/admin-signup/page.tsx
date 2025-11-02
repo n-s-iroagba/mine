@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
+    username:'',
     password: '',
   });
 
@@ -21,8 +22,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-    const data = await apiService.post(API_ROUTES.AUTH.LOGIN,formData)
-    router.push(`/${data.data.user.role}/dashboard`)
+    const data = await apiService.post(API_ROUTES.AUTH.SIGNUP_ADMIN,formData)
+        router.push(`/auth/verify-email/${data.data.verificationToken}`);
+
     } catch (err) {
       setError('An error occurred. Please try again.');
     } finally {
@@ -52,14 +54,36 @@ export default function LoginPage() {
               <span className="text-2xl font-bold text-gray-900">SatoshiVertex</span>
             </div>
           </Link>
-          <h1 className="mt-6 text-3xl font-bold text-gray-900">Welcome Back</h1>
-          <p className="mt-2 text-gray-600">Sign in to your mining account</p>
+          <h1 className="mt-6 text-3xl font-bold text-gray-900">Admin Sign Up</h1>
+          <p className="mt-2 text-gray-600">Create Your Admin Account</p>
         </div>
 
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
+                 <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                Username *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="pl-10 block w-full border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="Enter your username"
+                />
+              </div>
+            </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address *

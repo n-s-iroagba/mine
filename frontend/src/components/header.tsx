@@ -4,9 +4,11 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const router = useRouter()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -47,7 +49,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <Button className="hidden md:inline-flex">Get Started</Button>
+          <Button onClick={()=>router.push('/auth/sign-up')} className="hidden md:inline-flex">Get Started</Button>
 
           {/* Mobile Menu Button */}
           <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
@@ -88,7 +90,10 @@ export function Header() {
             >
               About
             </Link>
-            <Button className="w-full">Get Started</Button>
+                 <Link href='/auth/sign-up'>
+            <Button  className="w-full">Get Started</Button>
+            </Link>
+
           </nav>
         </div>
       )}
