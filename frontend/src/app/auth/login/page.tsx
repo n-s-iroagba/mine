@@ -52,7 +52,7 @@ export default function LoginPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <span className="text-2xl font-bold text-gray-900">CryptoMine</span>
+              <span className="text-2xl font-bold text-gray-900">SatoshiVertex</span>
             </div>
           </Link>
           <h1 className="mt-6 text-3xl font-bold text-gray-900">Welcome Back</h1>

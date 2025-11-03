@@ -42,7 +42,7 @@ export default function AdminLayout({
     { name: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
     { name: 'Admin Wallets', href: '/admin/wallets', icon: '👛' },
     { name: 'Mining Servers', href: '/admin/servers', icon: '🖥️' },
-    { name: 'Mining Contracts', href: '/admin/contractsss', icon: '📑' },
+    { name: 'Mining Contracts', href: '/admin/contracts', icon: '📑' },
     { name: 'Banks', href: '/admin/banks', icon: '🏦' },
     { name: 'Subscriptions', href: '/admin/subscriptions', icon: '📋' },
     { name: 'Transactions', href: '/admin/transactions', icon: '💳' },

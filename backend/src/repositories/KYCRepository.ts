@@ -30,18 +30,18 @@ export class KYCRepository extends BaseRepository<KYC> implements IKYCRepository
     }
   }
 
-  async findByStatus(status: string): Promise<KYC[]> {
+  async findByStatus(status: "pending" | "successful" | "failed"): Promise<KYC[]> {
     try {
       return await this.findAll({
         where: { status },
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstname', 'lastname', 'phone'],
+
           },
           {
             association: 'reviewer',
-            attributes: ['id', 'email', 'firstname', 'lastname'],
+       
             required: false,
           },
         ],

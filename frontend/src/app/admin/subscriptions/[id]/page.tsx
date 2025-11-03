@@ -393,7 +393,7 @@ const transactions = subscription?.transactions||[]
                 View Miner Profile
               </Button>
             </Link>
-            <Link href={`/admin/contractsss/${subscription.miningContractId}`}>
+            <Link href={`/admin/contracts/${subscription.miningContractId}`}>
               <Button variant="outline">
                 View Contract Details
               </Button>

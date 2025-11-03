@@ -59,7 +59,7 @@ export default function EditWalletPage() {
   }, [walletId, coins]);
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, address: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

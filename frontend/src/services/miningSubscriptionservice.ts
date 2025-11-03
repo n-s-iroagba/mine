@@ -1,21 +1,20 @@
 import { apiService } from './api';
 import { API_ROUTES } from './apiRoutes';
 import {
-  CreateMiningSubscriptionData,
+
   UpdateEarningsData,
   MinerDashboard,
   ApiResponse,
-  MiningSubscriptionWithTransaction,
 
 
 
 } from '../types/api';
-import { MiningSubscription } from '@/types/subscription';
+import { MiningSubscription, MiningSubscriptionWithTransactions } from '@/types/subscription';
 
 export const miningSubscriptionService = {
   // ✅ Get all subscriptions (admin only)
-  async getAllSubscriptions(): Promise<MiningSubscriptionWithTransaction[]> {
-    const response = await apiService.get<ApiResponse<MiningSubscriptionWithTransaction[]>>(
+  async getAllSubscriptions(): Promise<MiningSubscriptionWithTransactions[]> {
+    const response = await apiService.get<ApiResponse<MiningSubscriptionWithTransactions[]>>(
       API_ROUTES.subscriptions.getAll
     );
     if (response.success && response.data) return response.data;
@@ -41,8 +40,8 @@ export const miningSubscriptionService = {
   },
 
   // ✅ Get subscription by ID
-  async getSubscriptionById(id: number): Promise<MiningSubscriptionWithTransaction> {
-    const response = await apiService.get<ApiResponse<MiningSubscriptionWithTransaction>>(
+  async getSubscriptionById(id: number): Promise<MiningSubscriptionWithTransactions> {
+    const response = await apiService.get<ApiResponse<MiningSubscriptionWithTransactions>>(
       API_ROUTES.subscriptions.getById(id)
     );
     if (response.success && response.data) return response.data;
@@ -50,8 +49,8 @@ export const miningSubscriptionService = {
   },
 
   // ✅ Create new subscription (admin only)
-  async createSubscription(data:any): Promise<MiningSubscriptionWithTransaction> {
-    const response = await apiService.post<ApiResponse<MiningSubscriptionWithTransaction>>(
+  async createSubscription(data:any): Promise<MiningSubscriptionWithTransactions> {
+    const response = await apiService.post<ApiResponse<MiningSubscriptionWithTransactions>>(
       API_ROUTES.subscriptions.create(1),
       data
     );
@@ -60,8 +59,8 @@ export const miningSubscriptionService = {
   },
 
   // ✅ Update earnings (admin only)
-  async updateEarnings(id: number, data: UpdateEarningsData): Promise<MiningSubscriptionWithTransaction> {
-    const response = await apiService.patch<ApiResponse<MiningSubscriptionWithTransaction>>(
+  async updateEarnings(id: number, data: UpdateEarningsData): Promise<MiningSubscriptionWithTransactions> {
+    const response = await apiService.patch<ApiResponse<MiningSubscriptionWithTransactions>>(
       API_ROUTES.subscriptions.updateEarnings(id),
       data
     );
@@ -70,8 +69,8 @@ export const miningSubscriptionService = {
   },
 
   // ✅ Update subscription (toggle active or auto-update)
-  async updateSubscription(id: number, data: Partial<MiningSubscription>): Promise<MiningSubscriptionWithTransaction> {
-    const response = await apiService.patch<ApiResponse<MiningSubscriptionWithTransaction>>(
+  async updateSubscription(id: number, data: Partial<MiningSubscription>): Promise<MiningSubscriptionWithTransactions> {
+    const response = await apiService.patch<ApiResponse<MiningSubscriptionWithTransactions>>(
       API_ROUTES.subscriptions.update(id),
       data
     );
@@ -79,14 +78,6 @@ export const miningSubscriptionService = {
     throw new Error(response.message);
   },
 
-    async updateSubpscriptionPaymentProof(subscriptionId:number, data: {paymentMethod:'bank'|'crypto',paymentProof:string}): Promise<MiningSubscriptionWithTransaction> {
-    const response = await apiService.patch<ApiResponse<MiningSubscriptionWithTransaction>>(
-      API_ROUTES.subscriptions.updateSubpscriptionPaymentProof(subscriptionId),
-      data
-    );
-    if (response.success && response.data) return response.data;
-    throw new Error(response.message);
-  },
 
   // ✅ Delete subscription (admin only)
   async deleteSubscription(id: number): Promise<void> {

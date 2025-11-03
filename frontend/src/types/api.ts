@@ -113,14 +113,14 @@ export interface UpdateMiningServerData {
 
 // Mining Contract types
 export interface MiningContract {
-  id: number;
+  id:number;
   miningServerId: number;
   periodReturn: number;
-  period: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
+  period: 'daily' | 'weekly' | 'fortnightly' | 'monthly'
+  minimumDeposit:number
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  miningServer?: MiningServer;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface CreateMiningContractData {
@@ -166,38 +166,6 @@ export interface UpdateBankData {
   isActive?: boolean;
 }
 
-// Mining Subscription types
-export interface MiningSubscription {
-  id: number;
-  miningContractId: number;
-  amountDeposited: number;
-  shouldUpdateAutomatically: boolean;
-  earnings: number;
-  minerId: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  miningContract?: MiningContract;
-  miner?:{
-    firstname:string
-    lastname:string
-    country:string
-    email:string
-    phone:string
-  }
-
-}
-export interface MiningSubscriptionWithTransaction extends MiningSubscription{
-  transactions:Transaction[]
-
-}
-
-export interface CreateMiningSubscriptionData {
-  miningContractId: number;
-  amountDeposited: number;
-  minerId: number;
-  shouldUpdateAutomatically?: boolean;
-}
 
 export interface UpdateEarningsData {
   earnings: number;
@@ -228,10 +196,10 @@ export interface MinerDashboard {
 export interface Transaction {
   id: number;
   amountInUSD: number;
-  originatingId: string;
+  paymentMethod: string;
   entityId: number;
   entity: 'subscription' | 'kyc';
-  status: 'initialized' | 'pending' | 'successful' | 'failed';
+  status: | 'pending' | 'successful' | 'failed';
   minerId: number;
   createdAt: string;
   updatedAt: string;
@@ -240,9 +208,11 @@ export interface Transaction {
 
 export interface CreateTransactionData {
   amountInUSD: number;
+  paymentMethod: string;
   entityId: number;
   entity: 'subscription' | 'kyc';
   minerId: number;
+reciept:string
 }
 
 export interface UpdateTransactionStatusData {

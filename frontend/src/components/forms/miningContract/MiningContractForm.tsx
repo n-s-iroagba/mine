@@ -113,7 +113,7 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
       } else {
         await miningContractService.createContract(formData);
       }
-      router.push('/admin/contractss');
+      router.push('/admin/contracts');
       router.refresh();
     } catch (error) {
       console.error('Failed to save contract:', error);

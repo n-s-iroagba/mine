@@ -69,8 +69,8 @@ const startServer = async () => {
     console.log('✅ Database connection established successfully.');
 
     // Sync models with database
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true }); // Use { force: true } to drop and recreate tables
+    if (process.env.NODE_ENV !== 'production') {
+      await sequelize.sync({ force: false }); // Use { force: true } to drop and recreate tables
       console.log('✅ Database synced successfully.');
     } else {
       await sequelize.sync(); // Safe sync for production

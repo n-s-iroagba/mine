@@ -13,7 +13,7 @@ export interface CreateMiningSubscriptionData {
 }
 
 export interface UpdateEarningsData {
-  earnings: number;
+  earnings: number;  
 }
 
 export class MiningSubscriptionService extends BaseService {
@@ -45,7 +45,7 @@ export class MiningSubscriptionService extends BaseService {
       }
 
       // Validate miner exists and is a miner
-      const miner = await Miner.findByPk(subscriptionData.minerId);
+      const miner = await Miner.findOne({where:{userId:subscriptionData.minerId}});
       if (!miner) {
         console.log(await Miner.findAll(),subscriptionData.minerId)
         throw new NotFoundError('Miner');

@@ -33,7 +33,7 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
         {include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstname', 'lastname'],
+    
           },
           {
             association: 'miningContract',
@@ -52,7 +52,7 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstname', 'lastname'],
+        
           },
           {
             association: 'miningContract',

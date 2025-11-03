@@ -11,7 +11,7 @@ import { MiningSubscription } from '@/types/subscription';
 
 export default function MiningContractsPage() {
   const { user } = useRequiredAuth();
-  const minerId = user.roleId;
+  const minerId = user?.roleId;
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [subscribed, setSubscribed] = useState<MiningSubscription | undefined>(undefined);
@@ -412,13 +412,13 @@ const calculateMiningProgress = () => {
 
         {/* Active Mining Button */}
         <button
-          disabled
+          onClick={()=>onSubscribe(contract)}
           className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white py-4 px-6 rounded-xl font-semibold cursor-not-allowed shadow-inner flex items-center justify-center space-x-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          <span>{subscription?.amountDeposited===0?'⛏️ Active Mining':'Complete Deposit'}</span>
+          <span>{subscription?.amountDeposited !== contract.minimumDeposit?'⛏️ Active Mining':'Complete Deposit'}</span>
         </button>
       </div>
     </div>

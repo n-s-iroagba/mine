@@ -1,3 +1,5 @@
+import { Transaction } from "./api";
+
 export interface MiningSubscription {
   id: number;
   miningContractId: number;
@@ -10,6 +12,9 @@ export interface MiningSubscription {
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+}
+export interface MiningSubscriptionWithTransactions extends MiningSubscription{
+  transactions:Transaction[]
 }
 
 export interface MiningSubscriptionCreationDto extends Omit<MiningSubscription, 'id' | 'shouldUpdateAutomatically' | 'earnings' | 'isActive' | 'createdAt' | 'updatedAt'|'amountDeposited'> {}

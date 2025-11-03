@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { CheckCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { API_ROUTES, apiService } from "@/services";
+import { useAuth } from "@/context/AuthContext";
 
 
 
@@ -20,6 +21,7 @@ const VerifyEmail = () => {
   const [token, setToken] = useState<string>('');
   const [submitting, setSubmitting] = useState(false)
   const router = useRouter()
+  const {setUser} = useAuth()
 
   useEffect(() => {
     if (!urlToken) {
@@ -68,6 +70,7 @@ const VerifyEmail = () => {
     setSubmitting(true)
     try {
       const response =await apiService.post(API_ROUTES.AUTH.VERIFY_EMAIL, { verificationCode: verificationCode, verificationToken: token })
+      setUser(response.data.user)
     apiService.setAuthToken(response.data.accessToken);
     router.push(`/${response.data.user.role}/dashboard`)
     } catch (err) {

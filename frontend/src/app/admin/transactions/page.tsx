@@ -9,6 +9,13 @@ import { formatCurrency, formatDate } from '../../../lib/utils';
 import { Transaction } from '../../../types/api';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/ui/Pagination';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+export interface UpdateTransactionStatusData {
+  status: 'pending' | 'successful' | 'failed';
+  amountInUSD: number;
+}
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -16,6 +23,10 @@ export default function TransactionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [editAmount, setEditAmount] = useState<string>('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -68,10 +79,46 @@ export default function TransactionsPage() {
 
   const handleStatusUpdate = async (transactionId: number, newStatus: string) => {
     try {
-      await transactionService.updateTransactionStatus(transactionId, { status: newStatus as any });
+      await transactionService.updateTransactionStatus(transactionId, { 
+        status: newStatus as any,
+        amountInUSD: transactions.find(t => t.id === transactionId)?.amountInUSD || 0
+      });
       await loadTransactions(); // Reload to reflect changes
     } catch (error) {
       console.error('Failed to update transaction status:', error);
+    }
+  };
+
+  const handleEditAmount = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setEditAmount(transaction.amountInUSD.toString());
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateAmount = async () => {
+    if (!editingTransaction || !editAmount) return;
+
+    const newAmount = parseFloat(editAmount);
+    if (isNaN(newAmount) || newAmount <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await transactionService.updateTransactionStatus(editingTransaction.id, {
+        status: editingTransaction.status,
+        amountInUSD: newAmount
+      });
+      await loadTransactions();
+      setIsEditDialogOpen(false);
+      setEditingTransaction(null);
+      setEditAmount('');
+    } catch (error) {
+      console.error('Failed to update transaction amount:', error);
+      alert('Failed to update transaction amount');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -91,10 +138,23 @@ export default function TransactionsPage() {
     {
       key: 'amountInUSD',
       label: 'Amount',
-      render: (value: number) => (
-        <span className="font-medium">
-          {formatCurrency(value)}
-        </span>
+      render: (value: number, row: Transaction) => (
+        <div className="flex items-center space-x-2">
+          <span className="font-medium">
+            {formatCurrency(value)}
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => handleEditAmount(row)}
+            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+            title="Edit amount"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </Button>
+        </div>
       ),
     },
     {
@@ -142,7 +202,7 @@ export default function TransactionsPage() {
       label: 'Transaction ID',
       render: (value: string) => (
         <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-          {value.slice(0, 8)}...
+          {value?.slice(0, 8)}...
         </code>
       ),
     },
@@ -158,7 +218,6 @@ export default function TransactionsPage() {
     pending: transactions.filter(t => t.status === 'pending').length,
     successful: transactions.filter(t => t.status === 'successful').length,
     failed: transactions.filter(t => t.status === 'failed').length,
-    initialized: transactions.filter(t => t.status === 'initialized').length,
   };
 
   const typeCounts = {
@@ -218,16 +277,6 @@ export default function TransactionsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">
-                {statusCounts.initialized}
-              </p>
-              <p className="text-sm text-gray-600">Initialized</p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filters */}
@@ -250,7 +299,6 @@ export default function TransactionsPage() {
                   { value: 'pending', label: 'Pending', count: statusCounts.pending },
                   { value: 'successful', label: 'Successful', count: statusCounts.successful },
                   { value: 'failed', label: 'Failed', count: statusCounts.failed },
-                  { value: 'initialized', label: 'Initialized', count: statusCounts.initialized },
                 ].map((filter) => (
                   <button
                     key={filter.value}
@@ -318,6 +366,74 @@ export default function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Amount Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Transaction Amount</DialogTitle>
+            <DialogDescription>
+              Update the amount for this transaction. This will affect the miner's subscription balance.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingTransaction && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-medium text-gray-600">Miner</p>
+                  <p>{editingTransaction.miner?.firstname} {editingTransaction.miner?.lastname}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-600">Current Amount</p>
+                  <p className="font-semibold">{formatCurrency(editingTransaction.amountInUSD)}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-600">Type</p>
+                  <p>{editingTransaction.entity === 'subscription' ? 'Subscription' : 'KYC Fee'}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-600">Status</p>
+                  <Badge variant={getStatusVariant(editingTransaction.status)}>
+                    {getStatusLabel(editingTransaction.status)}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+                  New Amount (USD)
+                </label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  placeholder="Enter new amount"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateAmount}
+              disabled={isUpdating || !editAmount}
+            >
+              {isUpdating ? 'Updating...' : 'Update Amount'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

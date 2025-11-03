@@ -8,6 +8,8 @@ export interface TransactionAttributes {
   entity: 'subscription' | 'kyc';
   status: 'initialized' | 'pending' | 'successful' | 'failed';
   minerId: number;
+  reciept:string
+   paymentMethod: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -21,6 +23,8 @@ class Transaction extends Model<TransactionAttributes, TransactionCreationAttrib
   public entity!: 'subscription' | 'kyc';
   public status!: 'initialized' | 'pending' | 'successful' | 'failed';
   public minerId!: number;
+  public reciept!: string;
+  public  paymentMethod!: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -46,9 +50,9 @@ Transaction.init(
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM('initialized', 'pending', 'successful', 'failed'),
+      type: DataTypes.ENUM('pending', 'successful', 'failed'),
       allowNull: false,
-      defaultValue: 'initialized',
+      defaultValue: 'pending',
     },
     minerId: {
       type: DataTypes.INTEGER,
@@ -68,6 +72,12 @@ Transaction.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    reciept: {
+      type:DataTypes.STRING
+    },
+    paymentMethod:{
+      type:DataTypes.STRING
+    }
   },
   {
     sequelize,

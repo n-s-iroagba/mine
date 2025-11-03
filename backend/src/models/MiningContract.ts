@@ -5,7 +5,8 @@ export interface MiningContractAttributes {
   id: number;
   miningServerId: number;
   periodReturn: number;
-  period: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
+  period: 'daily' | 'weekly' | 'fortnightly' | 'monthly'
+  // minimumDeposit:number
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -17,6 +18,7 @@ class MiningContract extends Model<MiningContractAttributes, MiningContractCreat
   public id!: number;
   public miningServerId!: number;
   public periodReturn!: number;
+  // public minimumDeposit!:number
   public period!: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
   public isActive!: boolean;
   public readonly createdAt!: Date;
@@ -61,6 +63,10 @@ MiningContract.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
+    // minimumDeposit: {
+    //   type:DataTypes.INTEGER,
+    //   allowNull:false
+    // }
   },
   {
     sequelize,

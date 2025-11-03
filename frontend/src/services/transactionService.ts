@@ -1,7 +1,10 @@
 import { apiService } from './api';
 import { API_ROUTES } from './apiRoutes';
-import { Transaction, CreateTransactionData, UpdateTransactionStatusData, TransactionStats, ApiResponse } from '../types/api';
-
+import { Transaction, CreateTransactionData,  TransactionStats, ApiResponse } from '../types/api';
+export interface UpdateTransactionStatusData {
+  status: 'pending' | 'successful' | 'failed';
+  amountInUSD: number;
+}
 export const transactionService = {
   // Get all transactions (admin only)
   async getAllTransactions(): Promise<Transaction[]> {

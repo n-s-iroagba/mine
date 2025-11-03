@@ -220,12 +220,12 @@ export default function AdminMiningContractsPage() {
       mobilePriority: 5,
       render: (_: any, row: MiningContract) => (
         <div className="flex space-x-2">
-          <Link href={`/admin/contractsss/${row.id}`}>
+          <Link href={`/admin/contracts/${row.id}`}>
             <Button variant="outline" size="sm">
               View
             </Button>
           </Link>
-          <Link href={`/admin/contractsss/edit/${row.id}`}>
+          <Link href={`/admin/contracts/edit/${row.id}`}>
             <Button variant="outline" size="sm">
               Edit
             </Button>
@@ -271,7 +271,7 @@ export default function AdminMiningContractsPage() {
             Manage mining contracts and their configurations
           </p>
         </div>
-        <Link href="/admin/contractsss/create">
+        <Link href="/admin/contracts/create">
           <Button className="mt-4 sm:mt-0">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -433,7 +433,7 @@ export default function AdminMiningContractsPage() {
                   ? 'Try adjusting your search or filters'
                   : 'Get started by creating your first mining contract'}
               </p>
-              <Link href="/admin/contractsss/create">
+              <Link href="/admin/contracts/create">
                 <Button>
                   Create Contract
                 </Button>

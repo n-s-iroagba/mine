@@ -60,12 +60,12 @@ export default function MiningContractDetailsPage() {
           </p>
         </div>
         <div className="flex space-x-2 mt-4 sm:mt-0">
-          <Link href={`/admin/contractss/edit/${contract.id}`}>
+          <Link href={`/admin/contracts/edit/${contract.id}`}>
             <Button variant="outline">
               Edit Contract
             </Button>
           </Link>
-          <Link href="/admin/contractss">
+          <Link href="/admin/contracts">
             <Button>
               Back to List
             </Button>

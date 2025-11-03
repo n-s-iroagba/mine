@@ -104,7 +104,7 @@ export default function AdminWalletsPage() {
       label: 'Actions',
       render: (_: any, row: AdminWallet) => (
         <div className="flex space-x-2">
-          <Link href={`/admin/wallets/edit/${row.id}`}>
+          <Link href={`/admin/wallets/${row.id}/edit`}>
             <Button variant="outline" size="sm">
               Edit
             </Button>

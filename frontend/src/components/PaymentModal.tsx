@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { adminWalletService, API_ROUTES, apiService, bankService, miningSubscriptionService } from '@/services';
+import { adminWalletService, API_ROUTES, apiService, bankService, miningSubscriptionService, transactionService } from '@/services';
 import { useApiQuery } from '@/hooks/useApi';
 import { Coin, useCoins } from '@/hooks/useCoins';
 import Image from 'next/image';
@@ -40,6 +40,7 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
   const [selectedBank, setSelectedBank] = useState('');
   const [selectedCrypto, setSelectedCrypto] = useState('');
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [amountInUSD, setAmountInUSD] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
@@ -94,6 +95,7 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
       setSelectedBank('');
       setSelectedCrypto('');
       setPaymentProof(null);
+      setAmountInUSD('');
       setError('');
       if (!isExistingSubscription) {
         setSelectedCoin(null);
@@ -144,22 +146,16 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
   };
 
   const createSubscription = async () => {
-      if (selectedCoin) {
-      alert('Please select a coin first');
-    
-    }
     if (!selectedCoin) {
       setError('Please select a coin first');
       return null;
     }
-   
 
     try {
-      const newSubscription = await apiService.post(API_ROUTES.subscriptions.create(minerId),{
-   
+      const newSubscription = await apiService.post(API_ROUTES.subscriptions.create(minerId), {
         miningContractId: contract.id,
         currency: selectedCoin.name,
-        symbol: selectedCoin.image,
+        symbol: selectedCoin.symbol,
         Id: minerId,
       });
 
@@ -179,6 +175,11 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
       return;
     }
 
+    if (!amountInUSD || parseFloat(amountInUSD) <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
 
@@ -193,14 +194,16 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
         return;
       }
 
-      // Update subscription with payment proof URL
-      await miningSubscriptionService.updateSubpscriptionPaymentProof(
-        subscriptionIdToUse,
-        {
-          paymentMethod: paymentMethod as 'bank' | 'crypto',
-          paymentProof: paymentProofUrl
-        }
-      );
+      // Create transaction with payment details
+      await transactionService.createTransaction({
+        paymentMethod: paymentMethod as 'bank' | 'crypto',
+        reciept: paymentProofUrl,
+        amountInUSD: parseFloat(amountInUSD),
+        entityId: subscriptionIdToUse,
+        entity: "subscription",
+        minerId: minerId,
+      });
+
       onSuccess();
       onClose();
     } catch (err) {
@@ -217,6 +220,7 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
 
       // Create subscription only for new subscriptions
       if (!subscriptionCreated && !isExistingSubscription) {
+        setError('');
         await createSubscription();
       }
 
@@ -281,9 +285,11 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
           <p className="text-gray-600 mt-1">
             Contract #{contract.id} - {contract.miningServer?.name}
             {isExistingSubscription && subscription && (
-              <span className="ml-2 text-blue-600">
-                • {subscription.currency} ({subscription.symbol})
-              </span>
+              <>
+                <span className="ml-2 text-blue-600">
+                  • {subscription.currency}  <Image src={subscription.symbol} width={30} height={30} alt='asset logo'/>
+                </span>
+              </>
             )}
           </p>
         </div>
@@ -386,7 +392,9 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
             <PaymentProofStep
               paymentMethod={paymentMethod}
               paymentProof={paymentProof}
+              amountInUSD={amountInUSD}
               onPaymentProofChange={setPaymentProof}
+              onAmountChange={setAmountInUSD}
               onSubmit={handlePaymentSubmission}
               onBack={handleBack}
               onCancel={handleCancelSubscription}
@@ -396,6 +404,7 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
               selectedWalletDetails={selectedWalletDetails}
               subscriptionCreated={subscriptionCreated || isExistingSubscription}
               isExistingSubscription={isExistingSubscription}
+              contract={contract}
             />
           )}
         </div>
@@ -413,7 +422,6 @@ function getStepStatus(step: string, currentStep: string, isExistingSubscription
   if (stepIndex === currentIndex) return 'current';
   return 'upcoming';
 }
-
 
 function CoinSelectionStep({
   coinsLoading,
@@ -525,7 +533,7 @@ function CoinSelectionStep({
   );
 }
 
-function PaymentMethodStep({ onMethodSelect, onBack }: any) {
+function PaymentMethodStep({ onMethodSelect, onBack, isExistingSubscription }: any) {
   return (
     <div>
       <div className="flex items-center mb-4">
@@ -594,7 +602,8 @@ function PaymentDetailsStep({
   walletsLoading,
   copied,
   selectedBankDetails,
-  selectedWalletDetails
+  selectedWalletDetails,
+  isExistingSubscription
 }: any) {
   const canCopy = paymentMethod === 'bank' ? selectedBank : selectedCrypto;
 
@@ -739,7 +748,9 @@ function PaymentDetailsStep({
 function PaymentProofStep({
   paymentMethod,
   paymentProof,
+  amountInUSD,
   onPaymentProofChange,
+  onAmountChange,
   onSubmit,
   onBack,
   onCancel,
@@ -747,8 +758,17 @@ function PaymentProofStep({
   error,
   selectedBankDetails,
   selectedWalletDetails,
-  subscriptionCreated
+  subscriptionCreated,
+  isExistingSubscription,
+  contract
 }: any) {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
   return (
     <div>
       <div className="flex items-center mb-4">
@@ -801,6 +821,26 @@ function PaymentProofStep({
               </div>
             </div>
           )}
+
+          {/* Amount Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Amount Transferred (USD) *
+            </label>
+            <input
+              type="number"
+              value={amountInUSD}
+              onChange={(e) => onAmountChange(e.target.value)}
+              placeholder={`Minimum: ${formatCurrency(contract.minimumDeposit || 100)}`}
+              min={contract.minimumDeposit || 100}
+              step="0.01"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Minimum deposit: {formatCurrency(contract.minimumDeposit || 100)}
+            </p>
+          </div>
 
           {/* File Upload */}
           <div>
@@ -862,7 +902,7 @@ function PaymentProofStep({
               </button>
               <button
                 type="submit"
-                disabled={!paymentProof || isSubmitting}
+                disabled={!paymentProof || !amountInUSD || isSubmitting}
                 className="bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Payment Proof'}
