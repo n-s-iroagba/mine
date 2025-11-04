@@ -12,7 +12,6 @@ class KYCFeeRepository extends BaseRepository_1.BaseRepository {
             return await this.findOne({ minerId }, { include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstname', 'lastname'],
                     },
                 ],
             });
@@ -28,7 +27,6 @@ class KYCFeeRepository extends BaseRepository_1.BaseRepository {
                 include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstname', 'lastname'],
                     },
                 ],
                 order: [['createdAt', 'DESC']],
@@ -55,7 +53,6 @@ class KYCFeeRepository extends BaseRepository_1.BaseRepository {
                 include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstname', 'lastname'],
                     },
                 ],
                 order: [['createdAt', 'DESC']],

@@ -7,6 +7,7 @@ exports.TransactionService = void 0;
 const repositories_1 = require("../repositories");
 const utils_1 = require("./utils");
 const Miner_1 = __importDefault(require("../models/Miner"));
+const models_1 = require("../models");
 class TransactionService extends utils_1.BaseService {
     constructor() {
         super('TransactionService');
@@ -21,7 +22,6 @@ class TransactionService extends utils_1.BaseService {
                 entity: transactionData.entity,
                 amount: transactionData.amountInUSD
             });
-            this.validateRequiredFields(transactionData, ['amountInUSD', 'entityId', 'entity', 'minerId']);
             // Validate miner exists
             const miner = await this.userRepository.findById(transactionData.minerId);
             if (!miner) {
@@ -44,7 +44,7 @@ class TransactionService extends utils_1.BaseService {
             }
             const transaction = await this.transactionRepository.create({
                 ...transactionData,
-                status: 'initialized',
+                status: 'pending',
             });
             this.logInfo('Transaction created successfully', { transactionId: transaction.id });
             return transaction.get({ plain: true });
@@ -98,19 +98,21 @@ class TransactionService extends utils_1.BaseService {
             if (!transaction) {
                 throw new utils_1.NotFoundError('Transaction');
             }
-            const updatedTransaction = await this.transactionRepository.updateStatus(id, statusData.status);
-            if (!updatedTransaction) {
-                throw new utils_1.AppError('Failed to update transaction status');
-            }
+            transaction.amountInUSD = statusData.amountInUSD;
             // If transaction is successful and is for subscription, handle subscription activation
-            if (statusData.status === 'successful' && transaction.entity === 'subscription') {
-                await this.handleSuccessfulSubscriptionPayment(transaction.entityId);
-            }
-            // Send email notification for successful transactions
             if (statusData.status === 'successful') {
-                const miner = await Miner_1.default.findByPk(updatedTransaction.minerId);
-                const user = await this.userRepository.findById(miner.userId);
+                transaction.status = 'successful';
+                await transaction.save();
+                if (transaction.entity === 'subscription') {
+                    await this.handleSuccessfulSubscriptionPayment(transaction.entityId, statusData.amountInUSD);
+                }
+                if (transaction.entity === 'kyc') {
+                    await this.handleSuccessfulKycPayment(transaction.entityId, statusData.amountInUSD, transaction.createdAt);
+                }
+                // Send email notification for successful transactions
+                const miner = await Miner_1.default.findByPk(transaction.minerId);
                 if (miner) {
+                    const user = await this.userRepository.findById(miner.userId);
                     await utils_1.EmailHelper.sendEmail({
                         to: user.email,
                         subject: 'Payment Confirmed',
@@ -118,7 +120,7 @@ class TransactionService extends utils_1.BaseService {
                     });
                 }
             }
-            return updatedTransaction.get({ plain: true });
+            return transaction.get({ plain: true });
         }
         catch (error) {
             this.handleError(error, 'Failed to update transaction status');
@@ -134,16 +136,35 @@ class TransactionService extends utils_1.BaseService {
             this.handleError(error, 'Failed to fetch transactions by status');
         }
     }
-    async handleSuccessfulSubscriptionPayment(subscriptionId) {
+    async handleSuccessfulSubscriptionPayment(subscriptionId, amountDeposited) {
         try {
             const subscription = await this.miningSubscriptionRepository.findById(subscriptionId);
             if (subscription && !subscription.isActive) {
-                await this.miningSubscriptionRepository.update(subscriptionId, { isActive: true });
+                await this.miningSubscriptionRepository.update(subscriptionId, { isActive: true, amountDeposited });
                 this.logInfo('Subscription activated after successful payment', { subscriptionId });
             }
         }
         catch (error) {
             this.logError('Failed to activate subscription after payment', error);
+        }
+    }
+    async handleSuccessfulKycPayment(kycId, amountDeposited, time) {
+        try {
+            const kyc = await models_1.KYC.findByPk(kycId);
+            if (kyc) {
+                const kycFee = await models_1.KYCFee.findOne({ where: { minerId: kyc.minerId } });
+                if (kycFee) {
+                    kycFee.isPaid = true;
+                    kycFee.amount = amountDeposited,
+                        kycFee.isPaid = true;
+                    kycFee.paidAt = time;
+                    await kyc.save();
+                }
+                this.logInfo('kyc activated after successful payment', { kycId });
+            }
+        }
+        catch (error) {
+            this.logError('Failed to activate kyc after payment', error);
         }
     }
     async getTransactionStats() {

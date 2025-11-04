@@ -44,6 +44,10 @@ MiningContract.init({
         allowNull: false,
         defaultValue: sequelize_1.DataTypes.NOW,
     },
+    minimumDeposit: {
+        type: sequelize_1.DataTypes.INTEGER,
+        allowNull: false
+    }
 }, {
     sequelize: database_1.default,
     tableName: 'mining_contracts',

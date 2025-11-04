@@ -26,9 +26,9 @@ Transaction.init({
         allowNull: false,
     },
     status: {
-        type: sequelize_1.DataTypes.ENUM('initialized', 'pending', 'successful', 'failed'),
+        type: sequelize_1.DataTypes.ENUM('pending', 'successful', 'failed'),
         allowNull: false,
-        defaultValue: 'initialized',
+        defaultValue: 'pending',
     },
     minerId: {
         type: sequelize_1.DataTypes.INTEGER,
@@ -48,6 +48,12 @@ Transaction.init({
         allowNull: false,
         defaultValue: sequelize_1.DataTypes.NOW,
     },
+    reciept: {
+        type: sequelize_1.DataTypes.STRING
+    },
+    paymentMethod: {
+        type: sequelize_1.DataTypes.STRING
+    }
 }, {
     sequelize: database_1.default,
     tableName: 'transactions',

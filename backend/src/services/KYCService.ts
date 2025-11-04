@@ -157,7 +157,7 @@ export class KYCService extends BaseService {
       this.logInfo('Fetching KYC requests by status', { status });
 
 
-      const kycRequests = await this.kycRepository.findByStatus(status);
+      const kycRequests = await this.kycRepository.findByStatus(status as "failed" | "pending" | "successful");
       return kycRequests.map(kyc => kyc.get({ plain: true }));
     } catch (error) {
       this.handleError(error, 'Failed to fetch KYC requests by status');

@@ -26,7 +26,7 @@ class MiningSubscriptionService extends utils_1.BaseService {
                 throw new utils_1.NotFoundError('Mining contract');
             }
             // Validate miner exists and is a miner
-            const miner = await Miner_1.default.findByPk(subscriptionData.minerId);
+            const miner = await Miner_1.default.findOne({ where: { userId: subscriptionData.minerId } });
             if (!miner) {
                 console.log(await Miner_1.default.findAll(), subscriptionData.minerId);
                 throw new utils_1.NotFoundError('Miner');
@@ -49,7 +49,7 @@ class MiningSubscriptionService extends utils_1.BaseService {
         try {
             this.logInfo('Fetching all mining subscriptions');
             const subscriptions = await this.miningSubscriptionRepository.findAllWithDetails();
-            return subscriptions.map(subscription => subscription.get({ plain: true }));
+            return subscriptions;
         }
         catch (error) {
             this.handleError(error, 'Failed to fetch mining subscriptions');
@@ -77,7 +77,7 @@ class MiningSubscriptionService extends utils_1.BaseService {
                 throw new utils_1.NotFoundError('Miner');
             }
             const subscriptions = await this.miningSubscriptionRepository.findByMinerIdWithDetails(minerId);
-            return subscriptions.map(subscription => subscription.get({ plain: true }));
+            return subscriptions;
         }
         catch (error) {
             this.handleError(error, 'Failed to fetch subscriptions by miner ID');

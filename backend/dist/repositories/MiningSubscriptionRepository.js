@@ -1,7 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MiningSubscriptionRepository = void 0;
 const models_1 = require("../models");
+const Miner_1 = __importDefault(require("../models/Miner"));
 const BaseRepository_1 = require("./BaseRepository");
 class MiningSubscriptionRepository extends BaseRepository_1.BaseRepository {
     constructor() {
@@ -19,14 +23,19 @@ class MiningSubscriptionRepository extends BaseRepository_1.BaseRepository {
     }
     async findByIdWithDetails(id) {
         try {
-            return await this.findOne({ id }, { include: [
-                    {
-                        association: 'miner',
-                        attributes: ['id', 'email', 'firstname', 'lastname'],
-                    },
+            return await this.findOne({ id }, {
+                include: [
                     {
                         association: 'miningContract',
                         include: ['miningServer'],
+                    },
+                    {
+                        model: models_1.Transaction,
+                        as: 'transactions',
+                        where: {
+                            entity: 'subscription',
+                        },
+                        required: false,
                     },
                 ],
             });
@@ -40,13 +49,20 @@ class MiningSubscriptionRepository extends BaseRepository_1.BaseRepository {
             return await this.findAll({
                 include: [
                     {
-                        association: 'miner',
-                        attributes: ['id', 'email', 'firstname', 'lastname'],
-                    },
-                    {
                         association: 'miningContract',
                         include: ['miningServer'],
                     },
+                    {
+                        model: models_1.Transaction,
+                        as: 'transactions',
+                        where: {
+                            entity: 'subscription',
+                        },
+                        required: false,
+                    }, {
+                        model: Miner_1.default,
+                        as: 'miner'
+                    }
                 ],
                 order: [['createdAt', 'DESC']],
             });
@@ -63,6 +79,15 @@ class MiningSubscriptionRepository extends BaseRepository_1.BaseRepository {
                     {
                         association: 'miningContract',
                         include: ['miningServer'],
+                    },
+                    {
+                        model: models_1.Transaction,
+                        as: 'transactions',
+                        where: {
+                            entity: 'subscription',
+                            minerId: minerId
+                        },
+                        required: false,
                     },
                 ],
                 order: [['createdAt', 'DESC']],

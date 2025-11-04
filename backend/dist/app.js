@@ -17,7 +17,7 @@ const app = (0, express_1.default)();
 app.use((0, helmet_1.default)());
 // CORS configuration
 app.use((0, cors_1.default)({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' ? 'https://satoshivertex.com' : 'http://localhost:3000',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -59,8 +59,8 @@ const startServer = async () => {
         await database_1.default.authenticate();
         console.log('✅ Database connection established successfully.');
         // Sync models with database
-        if (process.env.NODE_ENV === 'development') {
-            await database_1.default.sync({ alter: true }); // Use { force: true } to drop and recreate tables
+        if (process.env.NODE_ENV !== 'production') {
+            await database_1.default.sync(); // Use { force: true } to drop and recreate tables
             console.log('✅ Database synced successfully.');
         }
         else {

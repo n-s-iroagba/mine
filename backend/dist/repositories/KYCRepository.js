@@ -28,11 +28,9 @@ class KYCRepository extends BaseRepository_1.BaseRepository {
                 include: [
                     {
                         association: 'miner',
-                        attributes: ['id', 'email', 'firstname', 'lastname', 'phone'],
                     },
                     {
                         association: 'reviewer',
-                        attributes: ['id', 'email', 'firstname', 'lastname'],
                         required: false,
                     },
                 ],

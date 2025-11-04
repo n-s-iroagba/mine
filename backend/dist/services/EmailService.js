@@ -7,7 +7,7 @@ class EmailService extends utils_1.BaseService {
     constructor(url) {
         super('EmailService');
         this.userRepository = new repositories_1.UserRepository();
-        this.clientUrl = url;
+        this.clientUrl = process.env.NODE_ENV === 'production' ? 'https://satoshivertex.com' : 'htpp://localhost:3000';
     }
     async sendEmail(emailData) {
         try {

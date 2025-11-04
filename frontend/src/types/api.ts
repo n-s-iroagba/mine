@@ -119,8 +119,8 @@ export interface MiningContract {
   period: 'daily' | 'weekly' | 'fortnightly' | 'monthly'
   minimumDeposit:number
   isActive: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CreateMiningContractData {
