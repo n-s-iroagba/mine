@@ -10,8 +10,9 @@ export interface MiningSubscription {
   currency:string
   symbol:string
   isActive: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  miner:any
 }
 export interface MiningSubscriptionWithTransactions extends MiningSubscription{
   transactions:Transaction[]

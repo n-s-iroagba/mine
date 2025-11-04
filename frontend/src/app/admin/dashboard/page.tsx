@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Button } from '../../../components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { kycService, miningSubscriptionService, transactionService } from '@/services';
-import { KYCStats, TransactionStats, MiningSubscription } from '@/types/api';
+import { KYCStats, TransactionStats} from '@/types/api';
+import { MiningSubscription } from '@/types/subscription';
 
 interface DashboardData {
   kycStats: KYCStats | null;
@@ -152,7 +153,7 @@ export default function AdminDashboard() {
     id: sub.id,
     user: sub.miner ? `${sub.miner.firstname || ''} ${sub.miner.lastname || ''}`.trim() || `Miner #${sub.minerId}` : `Miner #${sub.minerId}`,
     action: sub.isActive ? 'Created active subscription' : 'Created subscription',
-    time: formatTimeAgo(sub.createdAt),
+    time: formatTimeAgo(sub.createdAt.toDateString()),
     type: 'subscription' as const,
   }));
 
