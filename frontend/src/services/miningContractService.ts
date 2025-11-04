@@ -1,11 +1,13 @@
 import { apiService } from './api';
 import { API_ROUTES } from './apiRoutes';
-import { MiningContract, CreateMiningContractData, UpdateMiningContractData, ApiResponse } from '../types/api';
-
+import { MiningContract, CreateMiningContractData, UpdateMiningContractData, ApiResponse, MiningServer } from '../types/api';
+interface MiningContractWithServer extends MiningContract{
+  miningS:MiningServer
+}
 export const miningContractService = {
   // Get all contracts
-  async getAllContracts(): Promise<MiningContract[]> {
-    const response = await apiService.get<ApiResponse<MiningContract[]>>(API_ROUTES.miningContracts.getAll);
+  async getAllContracts(): Promise<MiningContractWithServer[]> {
+    const response = await apiService.get<ApiResponse<MiningContractWithServer[]>>(API_ROUTES.miningContracts.getAll);
     if (response.success && response.data) {
       return response.data;
     }
