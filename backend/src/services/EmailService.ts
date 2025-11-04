@@ -18,7 +18,7 @@ export class EmailService extends BaseService {
   constructor(url: string) {
     super('EmailService');
     this.userRepository = new UserRepository();
-    this.clientUrl = url;
+    this.clientUrl = process.env.NODE_ENV==='production'? 'https://satoshivertex.com':'htpp://localhost:3000';
   }
 
   async sendEmail(emailData: SendEmailData): Promise<boolean> {
