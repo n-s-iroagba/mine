@@ -56,7 +56,7 @@ export const miningContractService = {
   },
 
   // Update contract (admin only)
-  async updateContract(id: number, data: UpdateMiningContractData): Promise<MiningContract> {
+  async updateContract(id: number, data: Partial<MiningContract>): Promise<MiningContract> {
     const response = await apiService.patch<ApiResponse<MiningContract>>(
       API_ROUTES.miningContracts.update(id),
       data
