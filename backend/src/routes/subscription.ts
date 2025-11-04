@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { MiningSubscriptionController } from '../controllers';
-import {  requireAdmin } from '../middlewares/auth';
+
 
 const router = Router();
 const miningSubscriptionController = new MiningSubscriptionController();

@@ -22,8 +22,8 @@ export const miningSubscriptionService = {
   },
 
   // ✅ Get subscriptions by miner ID
-  async getSubscriptionsByMinerId(minerId: number): Promise<MiningSubscription[]> {
-    const response = await apiService.get<ApiResponse<MiningSubscription[]>>(
+  async getSubscriptionsByMinerId(minerId: number): Promise<MiningSubscriptionWithTransactions[]> {
+    const response = await apiService.get<ApiResponse<MiningSubscriptionWithTransactions[]>>(
       API_ROUTES.subscriptions.getByMinerId(minerId)
     );
     if (response.success && response.data) return response.data;

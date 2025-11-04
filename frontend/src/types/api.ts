@@ -126,12 +126,15 @@ export interface MiningContract {
 export interface CreateMiningContractData {
   miningServerId: number;
   periodReturn: number;
+  minimumDeposit:number
   period: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
+  
 }
 
 export interface UpdateMiningContractData {
   miningServerId?: number;
   periodReturn?: number;
+  minimumDeposit:number
   period?: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
   isActive?: boolean;
 }

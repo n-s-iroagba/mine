@@ -6,7 +6,7 @@ export interface TransactionAttributes {
   amountInUSD: number;
   entityId: number;
   entity: 'subscription' | 'kyc';
-  status: 'initialized' | 'pending' | 'successful' | 'failed';
+  status:'pending' | 'successful' | 'failed';
   minerId: number;
   reciept:string
    paymentMethod: string;
@@ -21,7 +21,7 @@ class Transaction extends Model<TransactionAttributes, TransactionCreationAttrib
   public amountInUSD!: number
   public entityId!: number;
   public entity!: 'subscription' | 'kyc';
-  public status!: 'initialized' | 'pending' | 'successful' | 'failed';
+  public status!:'pending' | 'successful' | 'failed';
   public minerId!: number;
   public reciept!: string;
   public  paymentMethod!: string;

@@ -8,6 +8,7 @@ import routes from './routes';
 import { errorHandler } from './middlewares/errorHandler';
 import sequelize from './config/database';
 import { requestLogger } from './middlewares/requestLogger';
+import { MiningSubscription } from './models';
 
 const app = express();
 
@@ -70,7 +71,7 @@ const startServer = async () => {
 
     // Sync models with database
     if (process.env.NODE_ENV !== 'production') {
-      await sequelize.sync({ force: false }); // Use { force: true } to drop and recreate tables
+      await sequelize.sync(); // Use { force: true } to drop and recreate tables
       console.log('✅ Database synced successfully.');
     } else {
       await sequelize.sync(); // Safe sync for production

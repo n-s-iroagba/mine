@@ -3,25 +3,26 @@
 import React, { useState } from 'react';
 import { miningContractService, miningSubscriptionService } from '@/services';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 import { PaymentModal } from '@/components/PaymentModal';
-import { useApiQuery } from '@/hooks/useApi';
-import { useAuth, useRequiredAuth } from '@/context/AuthContext';
+import {  useRequiredAuth } from '@/context/AuthContext';
 import { MiningContract } from '@/types/api';
-import { MiningSubscription } from '@/types/subscription';
+import { MiningSubscriptionWithTransactions } from '@/types/subscription';
+import { useApiQuery } from '@/hooks/useApi';
 
 export default function MiningContractsPage() {
   const { user } = useRequiredAuth();
   const minerId = user?.roleId;
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [subscribed, setSubscribed] = useState<MiningSubscription | undefined>(undefined);
+  const [subscribed, setSubscribed] = useState<MiningSubscriptionWithTransactions | undefined>(undefined);
   
   const { data: contracts = [], isLoading } = useApiQuery(
     ['mining-contracts'],
     () => miningContractService.getAllContracts()
   );
 
-  const { data: existingSubscriptions = [] } = useApiQuery<MiningSubscription[]>(
+  const { data: existingSubscriptions = [] } = useApiQuery<MiningSubscriptionWithTransactions[]>(
     ['miner-subscriptions', minerId],
     () => miningSubscriptionService.getSubscriptionsByMinerId(minerId!),
     { enabled: !!minerId }
@@ -32,7 +33,7 @@ export default function MiningContractsPage() {
   };
 
   const handleSubscribe = (contract: MiningContract) => {
-    const subscription = existingSubscriptions.find((sub: MiningSubscription) => 
+    const subscription = existingSubscriptions.find((sub: MiningSubscriptionWithTransactions) => 
       sub.miningContractId === contract.id
     );
     
@@ -309,6 +310,7 @@ const calculateMiningProgress = () => {
                 </div>
               </div>
 
+       
               {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="bg-white rounded-lg p-2">
@@ -354,7 +356,7 @@ const calculateMiningProgress = () => {
                     </div>
                     <div>
                       <div className="font-semibold text-gray-900">{subscription.currency}</div>
-                      <div className="text-sm text-gray-600">{subscription.symbol}</div>
+                      <Image width={20} height={20} alt='asset logo' src ={subscription.symbol}/>
                     </div>
                   </div>
                 </div>
@@ -386,6 +388,7 @@ const calculateMiningProgress = () => {
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl p-4">
                   <h5 className="font-semibold text-purple-900 mb-3">Performance Metrics</h5>
                   <div className="grid grid-cols-2 gap-4">
+                  
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">{contract.periodReturn}%</div>
                       <div className="text-xs text-purple-700">Return Rate</div>

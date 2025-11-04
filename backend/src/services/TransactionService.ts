@@ -67,7 +67,7 @@ export class TransactionService extends BaseService {
       const transaction = await this.transactionRepository.create({
         ...transactionData,
 
-        status: 'initialized',
+        status: 'pending',
       });
 
       this.logInfo('Transaction created successfully', { transactionId: transaction.id });
@@ -152,8 +152,9 @@ export class TransactionService extends BaseService {
       // Send email notification for successful transactions
      
         const miner = await Miner.findByPk(transaction.minerId)
+          if (miner) {
         const user = await this.userRepository.findById(miner.userId);
-        if (miner) {
+      
           await EmailHelper.sendEmail({
             to: user.email,
             subject: 'Payment Confirmed',

@@ -23,7 +23,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstname', 'lastname'],
+        
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -41,7 +41,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstname', 'lastname'],
+        
           },
         ],
         order: [['createdAt', 'DESC']],
@@ -51,7 +51,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
     }
   }
 
-  async updateStatus(id: number, status:"initialized" | "pending" | "successful"|'failed'): Promise< Transaction|null> {
+  async updateStatus(id: number, status:"pending" | "successful"|'failed'): Promise< Transaction|null> {
     try {
       return await this.update(id, { status });
     } catch (error) {
@@ -65,7 +65,7 @@ export class TransactionRepository extends BaseRepository<Transaction> implement
         include: [
           {
             association: 'miner',
-            attributes: ['id', 'email', 'firstname', 'lastname'],
+        
           },
         ],
         order: [['createdAt', 'DESC']],

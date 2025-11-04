@@ -1,9 +1,13 @@
-
-import { MiningContract, MiningSubscription } from '../models';
+import { MiningContract, MiningSubscription, Transaction } from '../models';
+import Miner from '../models/Miner';
 import { BaseRepository } from './BaseRepository';
-export interface FullSubscriptionDetails extends MiningSubscription{
-  miningContract:MiningContract
+
+export interface FullSubscriptionDetails extends MiningSubscription {
+  miningContract: MiningContract;
+  transactions: Transaction[];
+  miner:Miner
 }
+
 export interface IMiningSubscriptionRepository {
   findByMinerId(minerId: number): Promise<MiningSubscription[]>;
   findByIdWithDetails(id: number): Promise<MiningSubscription | null>;
@@ -27,40 +31,54 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
     }
   }
 
-  async findByIdWithDetails(id: number): Promise< FullSubscriptionDetails | null> {
+  async findByIdWithDetails(id: number): Promise<FullSubscriptionDetails | null> {
     try {
-      return await this.findOne( { id },
-        {include: [
-          {
-            association: 'miner',
-    
-          },
+      return await this.findOne({ id }, {
+  include: [
           {
             association: 'miningContract',
             include: ['miningServer'],
           },
+          {
+            model: Transaction,
+            as: 'transactions',
+            where: { 
+              entity: 'subscription',
+             
+            },
+            required: false,
+          },
         ],
-      }) as  FullSubscriptionDetails;
+      }) as FullSubscriptionDetails;
     } catch (error) {
       throw new Error(`Error finding subscription by ID ${id} with details: ${error}`);
     }
   }
 
-  async findAllWithDetails(): Promise<MiningSubscription[]> {
+  async findAllWithDetails(): Promise<FullSubscriptionDetails[]> {
     try {
       return await this.findAll({
-        include: [
-          {
-            association: 'miner',
-        
-          },
+    include: [
           {
             association: 'miningContract',
             include: ['miningServer'],
           },
+          {
+            model: Transaction,
+            as: 'transactions',
+            where: { 
+              entity: 'subscription',
+            
+            },
+            required: false,
+          },{
+            model:Miner,
+            as:'miner'
+          }
+
         ],
         order: [['createdAt', 'DESC']],
-      });
+      }) as FullSubscriptionDetails[];
     } catch (error) {
       throw new Error(`Error finding all subscriptions with details: ${error}`);
     }
@@ -75,9 +93,18 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
             association: 'miningContract',
             include: ['miningServer'],
           },
+          {
+            model: Transaction,
+            as: 'transactions',
+            where: { 
+              entity: 'subscription',
+              minerId: minerId 
+            },
+            required: false,
+          },
         ],
         order: [['createdAt', 'DESC']],
-      }) as FullSubscriptionDetails [];
+      }) as FullSubscriptionDetails[];
     } catch (error) {
       throw new Error(`Error finding subscriptions by miner ID ${minerId} with details: ${error}`);
     }

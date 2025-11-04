@@ -19,7 +19,29 @@ MiningServer.hasMany(MiningContract, {
   foreignKey: 'miningServerId',
   as: 'miningContracts',
 });
+MiningSubscription.hasMany(Transaction, {
+  foreignKey: 'entityId',
+  constraints: false,
+  scope: {
+    entity: 'subscription',
+  },
+  as: 'transactions',
+});
 
+Transaction.belongsTo(MiningSubscription, {
+  foreignKey: 'entityId',
+  constraints: false,
+  as: 'subscription',
+});  MiningSubscription.belongsTo(Miner, {
+    foreignKey: 'minerId',
+    as: 'miner',
+  });
+
+  // MiningContract - MiningSubscription association (One-to-Many)
+  MiningContract.hasMany(MiningSubscription, {
+    foreignKey: 'miningContractId',
+    as: 'subscriptions',
+  });
 // MiningSubscription relationships
 MiningSubscription.belongsTo(MiningContract, {
   foreignKey: 'miningContractId',
@@ -28,18 +50,9 @@ MiningSubscription.belongsTo(MiningContract, {
 
 MiningContract.hasMany(MiningSubscription, {
   foreignKey: 'miningContractId',
-  as: 'subscriptions',
+  
 });
 
-MiningSubscription.belongsTo(User, {
-  foreignKey: 'minerId',
-  as: 'miner',
-});
-
-User.hasMany(MiningSubscription, {
-  foreignKey: 'minerId',
-  as: 'subscriptions',
-});
 
 Miner.belongsTo(User, {
   foreignKey: 'userId',

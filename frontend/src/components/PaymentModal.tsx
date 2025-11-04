@@ -155,7 +155,7 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
       const newSubscription = await apiService.post(API_ROUTES.subscriptions.create(minerId), {
         miningContractId: contract.id,
         currency: selectedCoin.name,
-        symbol: selectedCoin.symbol,
+        symbol: selectedCoin.image,
         Id: minerId,
       });
 
@@ -182,9 +182,10 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
 
     setIsSubmitting(true);
     setError('');
-
+alert('h')
     try {
-      // Upload payment proof to Cloudinary first
+  
+//      Upload payment proof to Cloudinary first
       const paymentProofUrl = await uploadFile(paymentProof, 'image');
 
       const subscriptionIdToUse = subscription?.id || createdSubscriptionId;
@@ -193,7 +194,7 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
         setError('No subscription found. Please try again.');
         return;
       }
-
+      alert('hi')
       // Create transaction with payment details
       await transactionService.createTransaction({
         paymentMethod: paymentMethod as 'bank' | 'crypto',

@@ -8,35 +8,27 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { miningContractService, miningServerService } from '@/services';
-import { MiningContract } from '@/types/api';
+import { CreateMiningContractData, MiningContract } from '@/types/api';
 import { useApiQuery } from '@/hooks/useApi';
-
-interface MiningContractFormData {
-  miningServerId: number;
-  periodReturn: number;
-  period: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
-  isActive: boolean;
-}
 
 interface MiningContractFormProps {
   contract?: MiningContract;
   isEdit?: boolean;
 }
 
-type FormErrors = Partial<Record<keyof MiningContractFormData, string>> & {
+type FormErrors = Partial<Record<keyof CreateMiningContractData, string>> & {
   form?: string;
 };
 
 export function MiningContractForm({ contract, isEdit = false }: MiningContractFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<MiningContractFormData>({
+  const [formData, setFormData] = useState<CreateMiningContractData>({
     miningServerId: 0,
     periodReturn: 0,
+    minimumDeposit: 0,
     period: 'daily',
-    isActive: true,
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -51,8 +43,8 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
       setFormData({
         miningServerId: contract.miningServerId,
         periodReturn: contract.periodReturn,
+        minimumDeposit: contract.minimumDeposit,
         period: contract.period,
-        isActive: contract.isActive,
       });
     } else if (miningServers.length > 0) {
       setFormData(prev => ({
@@ -77,6 +69,12 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
       newErrors.periodReturn = 'Return cannot exceed 100%';
     }
 
+    if (formData.minimumDeposit === null || formData.minimumDeposit === undefined) {
+      newErrors.minimumDeposit = 'Minimum deposit is required';
+    } else if (formData.minimumDeposit < 0) {
+      newErrors.minimumDeposit = 'Minimum deposit must be at least 0';
+    }
+
     if (!formData.period) {
       newErrors.period = 'Please select a payout period';
     }
@@ -85,7 +83,7 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: keyof MiningContractFormData, value: any) => {
+  const handleInputChange = (field: keyof CreateMiningContractData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -151,7 +149,7 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
               </div>
             )}
 
-            {/* Fixed Mining Server Dropdown */}
+            {/* Mining Server Dropdown */}
             <div className="space-y-2">
               <Label htmlFor="miningServerId">Mining Server</Label>
               <Select
@@ -164,7 +162,7 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
                 <SelectTrigger>
                   <SelectValue placeholder="Select mining server" />
                 </SelectTrigger>
-                <SelectContent className="z-50 max-h-60" >
+                <SelectContent className="z-50 max-h-60">
                   {serversLoading ? (
                     <SelectItem value="loading" disabled>
                       Loading servers...
@@ -197,33 +195,62 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
               )}
             </div>
 
+            {/* Period Return Input */}
             <div className="space-y-2">
               <Label htmlFor="periodReturn">Period Return (%)</Label>
               <Input
                 id="periodReturn"
                 type="number"
                 step="0.01"
+                min="0"
+                max="100"
                 value={formData.periodReturn}
                 onChange={(e) => handleInputChange('periodReturn', parseFloat(e.target.value) || 0)}
+                placeholder="Enter return percentage"
               />
               {errors.periodReturn && (
                 <p className="text-sm text-red-600">{errors.periodReturn}</p>
               )}
+              <p className="text-xs text-gray-500">
+                The percentage return users will receive for the selected period
+              </p>
             </div>
 
-            {/* Fixed Period Dropdown */}
+            {/* Minimum Deposit Input */}
+            <div className="space-y-2">
+              <Label htmlFor="minimumDeposit">Minimum Deposit ($)</Label>
+              <Input
+                id="minimumDeposit"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.minimumDeposit}
+                onChange={(e) => handleInputChange('minimumDeposit', parseFloat(e.target.value) || 0)}
+                placeholder="Enter minimum deposit amount"
+              />
+              {errors.minimumDeposit && (
+                <p className="text-sm text-red-600">{errors.minimumDeposit}</p>
+              )}
+              <p className="text-xs text-gray-500">
+                The minimum amount users must deposit to start mining with this contract
+              </p>
+            </div>
+
+            {/* Period Dropdown */}
             <div className="space-y-2">
               <Label htmlFor="period">Payout Period</Label>
               <Select
                 value={formData.period}
-                onValueChange={(value: string) => 
-                  handleInputChange('period', value)
-                }
+                onValueChange={(value: string) => {
+                  // Type assertion to ensure we're only using valid period values
+                  const periodValue = value as 'daily' | 'weekly' | 'fortnightly' | 'monthly';
+                  handleInputChange('period', periodValue);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select period" />
                 </SelectTrigger>
-                <SelectContent className="z-50" >
+                <SelectContent className="z-50">
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly</SelectItem>
                   <SelectItem value="fortnightly">Fortnightly</SelectItem>
@@ -233,15 +260,9 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
               {errors.period && (
                 <p className="text-sm text-red-600">{errors.period}</p>
               )}
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked: boolean) => handleInputChange('isActive', checked)}
-              />
-              <Label htmlFor="isActive">Active Contract</Label>
+              <p className="text-xs text-gray-500">
+                How often users will receive their mining returns
+              </p>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">

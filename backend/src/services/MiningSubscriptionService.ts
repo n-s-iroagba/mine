@@ -71,11 +71,11 @@ export class MiningSubscriptionService extends BaseService {
     }
   }
 
-  async getAllSubscriptions(): Promise<MiningSubscriptionAttributes[]> {
+  async getAllSubscriptions(): Promise<FullSubscriptionDetails[]> {
     try {
       this.logInfo('Fetching all mining subscriptions');
       const subscriptions = await this.miningSubscriptionRepository.findAllWithDetails();
-      return subscriptions.map(subscription => subscription.get({ plain: true }));
+      return subscriptions
     } catch (error) {
       this.handleError(error, 'Failed to fetch mining subscriptions');
     }
@@ -96,7 +96,7 @@ export class MiningSubscriptionService extends BaseService {
     }
   }
 
-  async getSubscriptionsByMinerId(minerId: number): Promise<MiningSubscriptionAttributes[]> {
+  async getSubscriptionsByMinerId(minerId: number): Promise<FullSubscriptionDetails[]> {
     try {
       this.logInfo('Fetching subscriptions by miner ID', { minerId });
 
@@ -107,7 +107,7 @@ export class MiningSubscriptionService extends BaseService {
       }
 
       const subscriptions = await this.miningSubscriptionRepository.findByMinerIdWithDetails(minerId);
-      return subscriptions.map(subscription => subscription.get({ plain: true }));
+      return subscriptions
     } catch (error) {
       this.handleError(error, 'Failed to fetch subscriptions by miner ID');
     }
