@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { miningContractService } from '@/services';
 import { useApiQuery, useApiMutation } from '@/hooks/useApi';
 import { MiningContract } from '@/types/api';
+import { MiningContractWithServer } from '@/services/miningContractService';
 
 export default function AdminMiningContractsPage() {
   const router = useRouter();
@@ -67,7 +68,7 @@ export default function AdminMiningContractsPage() {
   };
 
   // Filter contracts based on search term
-  const filteredContracts = contracts.filter((contract: MiningContract) => {
+  const filteredContracts = contracts.filter((contract: MiningContractWithServer) => {
     const matchesSearch = 
       contract.miningServer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contract.period?.toLowerCase().includes(searchTerm.toLowerCase()) ||

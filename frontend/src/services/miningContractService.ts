@@ -1,8 +1,8 @@
 import { apiService } from './api';
 import { API_ROUTES } from './apiRoutes';
 import { MiningContract, CreateMiningContractData, UpdateMiningContractData, ApiResponse, MiningServer } from '../types/api';
-interface MiningContractWithServer extends MiningContract{
-  miningS:MiningServer
+export interface MiningContractWithServer extends MiningContract{
+  miningServer:MiningServer
 }
 export const miningContractService = {
   // Get all contracts
