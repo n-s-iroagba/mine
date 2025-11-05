@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, DollarSign, Activity, BarChart3 } from "lucide-react"
+import { MiniChart } from "react-ts-tradingview-widgets"
 
 export function InvestmentChartsSection() {
   return (
@@ -23,7 +24,7 @@ export function InvestmentChartsSection() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-accent">+24.5%</div>
+              <div className="text-3xl font-bold text-black">+24.5%</div>
               <p className="text-xs text-muted-foreground mt-1">Average annual return</p>
             </CardContent>
           </Card>
@@ -70,25 +71,7 @@ export function InvestmentChartsSection() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           <Card className="border-primary/20">
-            <CardHeader>
-              <CardTitle>Monthly Revenue Growth</CardTitle>
-              <CardDescription>Average investor returns over 12 months</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 flex items-end justify-between gap-2">
-                {[65, 72, 68, 78, 85, 82, 88, 92, 87, 95, 98, 100].map((height, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                    <div
-                      className="w-full bg-gradient-to-t from-primary to-accent rounded-t transition-all hover:opacity-80"
-                      style={{ height: `${height}%` }}
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][i]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
+                  <MiniChart symbol="BTC" colorTheme="light" width="100%"></MiniChart>
           </Card>
 
           <Card className="border-primary/20">

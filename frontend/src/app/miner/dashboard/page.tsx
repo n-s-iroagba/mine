@@ -7,8 +7,9 @@ import { Button } from '../../../components/ui/button';
 import { LoadingSpinner } from '../../../components/ui/loading-spinner';
 import { formatCurrency } from '../../../lib/utils';
 import { miningSubscriptionService } from '@/services';
-import { useAuth, useRequiredAuth } from '@/context/AuthContext';
+import {  useRequiredAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import {TickerTape} from 'react-ts-tradingview-widgets'
 
 
 export default function MinerDashboard() {
@@ -93,6 +94,7 @@ export default function MinerDashboard() {
           </Link>
         </div>
       </div>
+       <TickerTape colorTheme="light" />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
