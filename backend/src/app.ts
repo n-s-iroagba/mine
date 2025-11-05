@@ -21,9 +21,6 @@ app.use(
       'https://www.satoshivertex.com',
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    maxAge: 86400, // Cache preflight for 24 hours
   })
 );
 
