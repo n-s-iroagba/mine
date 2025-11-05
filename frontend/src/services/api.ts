@@ -168,7 +168,7 @@ class ApiService {
       }
     );
 
-    // Response interceptor for main client
+    // Response interceptor for main client - SINGLE UNIFIED INTERCEPTOR
     this.client.interceptors.response.use(
       (response: AxiosResponse): AxiosResponse => {
         console.log('Response interceptor - Success:', response.status, response.config.url);
@@ -228,10 +228,9 @@ class ApiService {
             this.tokenStorage.clearTokens();
 
             // Optionally redirect to login
-            // if (typeof window !== 'undefined') {
-            //   console.log('Redirecting to login page');
-            //   window.location.href = '/auth/login';
-            // }
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+              window.location.href = '/auth/login';
+            }
 
             return Promise.reject(refreshError as AxiosError);
           }
@@ -239,21 +238,12 @@ class ApiService {
 
         // For all other errors or if token refresh failed
         console.log('Rejecting error:', error.response?.status);
-        return Promise.reject(error);
-      }
-    );
-
-    // Additional error handling interceptor
-    this.client.interceptors.response.use(
-      (response: AxiosResponse): AxiosResponse => response,
-      (error: AxiosError): Promise<never> => {
+        
+        // Clear tokens for any 401 error (after refresh attempt or if retry already happened)
         if (error.response?.status === 401) {
           this.tokenStorage.clearTokens();
-          // Redirect to login page if not already there
-          // if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
-          //   window.location.href = '/auth/login';
-          // }
         }
+        
         return Promise.reject(error);
       }
     );
