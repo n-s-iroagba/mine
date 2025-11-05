@@ -74,7 +74,7 @@ const startServer = async () => {
       await sequelize.sync(); // Use { force: true } to drop and recreate tables
       console.log('✅ Database synced successfully.');
     } else {
-      await sequelize.sync(); // Safe sync for production
+      await sequelize.sync({force:true}); // Safe sync for production
       console.log('✅ Database synced successfully.');
     }
 
