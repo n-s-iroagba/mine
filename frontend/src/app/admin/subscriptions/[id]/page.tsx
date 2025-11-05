@@ -9,13 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { miningSubscriptionService} from '@/services';
 import { useApiQuery } from '@/hooks/useApi';
-import { MiningSubscriptionWithTransaction, Transaction } from '@/types/api';
+import {Transaction } from '@/types/api';
+import { MiningSubscriptionWithTransactions } from '@/types/subscription';
 
 export default function MiningSubscriptionDetailsPage() {
   const params = useParams();
   const id = parseInt(params.id as string);
 
-  const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } = useApiQuery<MiningSubscriptionWithTransaction>(
+  const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } = useApiQuery<any>(
     ['mining-subscription', id],
     () => miningSubscriptionService.getSubscriptionById(id)
   );

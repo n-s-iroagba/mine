@@ -15,7 +15,7 @@ import { useApiQuery, useApiMutation } from '@/hooks/useApi';
 import { MiningSubscription } from '@/types/subscription';
 
 interface FullMiningSubscription extends MiningSubscription {
-  miner?: {
+  miner: {
     firstname: string;
     lastname: string;
     country: string;
