@@ -12,15 +12,12 @@ import { requestLogger } from './middlewares/requestLogger';
 
 const app = express();
 
-// Security middleware
-app.use(helmet());
-
 app.use(
   cors({
     origin: [
       'http://localhost:3000',
-      'https://satoshivertex.com/',
-      'https://www.satoshivertex.com/',
+      'https://satoshivertex.com',
+      'https://www.satoshivertex.com',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
