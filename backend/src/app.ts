@@ -40,7 +40,7 @@ app.use(requestLogger);
 
 // API routes
 app.use('/api', routes);
-
+ 
 // Root route
 app.get('/', (_, res) => {
   res.status(200).json({
