@@ -8,13 +8,12 @@ import routes from './routes';
 import { errorHandler } from './middlewares/errorHandler';
 import sequelize from './config/database';
 import { requestLogger } from './middlewares/requestLogger';
-import { MiningSubscription } from './models';
+
 
 const app = express();
 
 // Security middleware
 app.use(helmet());
-
 
 app.use(
   cors({
