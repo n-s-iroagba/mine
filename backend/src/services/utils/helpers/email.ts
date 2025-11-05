@@ -35,7 +35,7 @@ export class EmailHelper {
       }
 
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: 'Satoshi Vertex',
         to: options.to,
         subject: options.subject,
         html: options.html,

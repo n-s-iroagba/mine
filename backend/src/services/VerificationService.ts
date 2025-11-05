@@ -8,6 +8,7 @@ import { UserService } from "./UserService";
 import { logger, BadRequestError, ForbiddenError } from "./utils";
 import { CodeHelper } from "./utils/helpers/codeHelper";
 import dotenv from 'dotenv'
+dotenv.config()
 
 
 export class VerificationService {
@@ -33,8 +34,10 @@ export class VerificationService {
       const verificationToken = this.tokenService.generateEmailVerificationToken(user)
 
       const verificationCode = process.env.NODE_ENV === 'production' ? CodeHelper.generateVerificationCode() : '123456'
-
-       await User.update({verificationCode,verificationToken},{where:{id:user.id}})
+      user.verificationCode = verificationCode
+      user.verificationToken = verificationToken
+      //  await User.update({verificationCode,verificationToken},{where:{id:user.id}})
+      await user.save()
       console.log(verificationToken)
       console.log(user)
       await this.emailService.sendVerificationEmail(user)
