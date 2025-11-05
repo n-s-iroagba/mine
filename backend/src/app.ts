@@ -12,6 +12,7 @@ import { requestLogger } from './middlewares/requestLogger';
 
 const app = express();
 
+// CORS should be FIRST
 app.use(
   cors({
     origin: [
@@ -22,8 +23,11 @@ app.use(
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    maxAge: 86400, // Cache preflight for 24 hours
   })
 );
+
+// Explicit preflight handler
 app.options('*', cors());
 app.use(cookieParser())
 
@@ -37,7 +41,11 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
 }
 app.use(requestLogger);
-
+app.use((req, res, next) => {
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Keep-Alive', 'timeout=30');
+  next();
+});
 // API routes
 app.use('/api', routes);
  
