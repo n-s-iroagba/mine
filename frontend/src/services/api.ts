@@ -227,10 +227,10 @@ class ApiService {
             console.error('Token refresh failed:', refreshError);
             this.tokenStorage.clearTokens();
 
-            // Optionally redirect to login
-            if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
-              window.location.href = '/auth/login';
-            }
+            // DON'T redirect - let useAuth handle it
+            // if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+            //   window.location.href = '/auth/login';
+            // }
 
             return Promise.reject(refreshError as AxiosError);
           }
