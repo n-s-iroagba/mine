@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Backend for Satoshi Vertex app",
   "main": "dist/app.js",
-
- "engines": {
+  "engines": {
     "node": "18.x",
     "npm": "9.x"
-  },  "scripts": {
+  },
+  "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
@@ -30,7 +30,7 @@
     "morgan": "^1.10.1",
     "ms": "^2.1.3",
     "mysql2": "^3.6.0",
-    "nodemailer": "^6.9.4",
+    "nodemailer": "^6.10.1",
     "sequelize": "^6.32.1",
     "sequelize-cli": "^6.6.1",
     "ts-node-dev": "^2.0.0",

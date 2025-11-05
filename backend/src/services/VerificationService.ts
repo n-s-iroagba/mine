@@ -7,7 +7,7 @@ import { TokenService } from "./TokenService";
 import { UserService } from "./UserService";
 import { logger, BadRequestError, ForbiddenError } from "./utils";
 import { CodeHelper } from "./utils/helpers/codeHelper";
-
+import dotenv from 'dotenv'
 
 
 export class VerificationService {
@@ -20,7 +20,7 @@ export class VerificationService {
       
   ) {
 
-    this.emailService = new EmailService('');
+    this.emailService = new EmailService( process.env.NODE_ENV==='production'?'https://www.satoshivertex.com' : 'http://localhost:3000',);
     this.tokenService = new TokenService('aba','')
     this.userService = new UserService()
 

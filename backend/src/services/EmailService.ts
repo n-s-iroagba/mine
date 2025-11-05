@@ -177,7 +177,7 @@ export class EmailService extends BaseService {
 
   async sendVerificationEmail(user: User): Promise<void> {
     try {
-      const verificationUrl = `${this.clientUrl}/verify-email?token=${user.verificationToken}`;
+      const verificationUrl = `${this.clientUrl}/auth/verify-email/${user.verificationToken}`;
       const html = `
         <!DOCTYPE html>
         <html>
