@@ -50,6 +50,7 @@ export class EmailHelper {
       });
       return true;
     } catch (error) {
+      console.error(error)
       logger.error('Failed to send email', {
         to: options.to,
         subject: options.subject,
