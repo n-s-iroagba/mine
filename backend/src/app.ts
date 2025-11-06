@@ -58,7 +58,15 @@ app.get('/', (_, res) => {
     documentation: '/api/docs',
   });
 });
-
+// Add this before your 404 handler
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Global error handler
 app.use(errorHandler);
