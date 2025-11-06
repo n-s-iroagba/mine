@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_ROUTES, apiService } from '@/services';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminSignupPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function AdminSignupPage() {
     username:'',
     password: '',
   });
+  const {setUser} = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +24,12 @@ export default function AdminSignupPage() {
     setIsLoading(true);
 
     try {
-    const data = await apiService.post(API_ROUTES.AUTH.SIGNUP_ADMIN,formData)
-        router.push(`/auth/verify-email/${data.data.verificationToken}`);
+    // const data = await apiService.post(API_ROUTES.AUTH.SIGNUP_ADMIN,formData)
+    //     router.push(`/auth/verify-email/${data.data.verificationToken}`);
+        const response = await apiService.post(API_ROUTES.AUTH.SIGNUP_MINER, formData);
+           setUser(response.data.user)
+          apiService.setAuthToken(response.data.accessToken);
+          router.push(`/${response.data.user.role}/dashboard`)
 
     } catch (err) {
       setError('An error occurred. Please try again.');

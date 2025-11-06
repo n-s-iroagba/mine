@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { authService } from '@/services';
+import { API_ROUTES, apiService, authService } from '@/services';
+import { useAuth } from '@/context/AuthContext';
 
 export default function MinerSignupPage() {
   const router = useRouter();
   const [step, setStep] = useState<'account' | 'profile'>('account');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const {setUser} = useAuth()
 
   // Account details
   const [accountData, setAccountData] = useState({
@@ -84,8 +86,10 @@ const handleProfileSubmit = async (e: React.FormEvent) => {
       phone: profileData.phone,
     };
 
-    const response = await authService.registerMiner(signupData);
-    router.push(`/auth/verify-email/${response.data.verificationToken}`);
+    const response = await apiService.post(API_ROUTES.AUTH.SIGNUP_MINER, signupData);
+       setUser(response.data.user)
+      apiService.setAuthToken(response.data.accessToken);
+      router.push(`/${response.data.user.role}/dashboard`)
   } catch (err: any) {
     setError(err.message || 'Failed to create account. Please try again.');
   } finally {

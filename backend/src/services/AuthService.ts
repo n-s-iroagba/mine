@@ -35,7 +35,7 @@ export class AuthService {
   /**
    * Registers a new user and initiates email verification.
    */
-  async signupMiner(data: any): Promise<SignUpResponseDto> {
+  async signupMiner(data: any): Promise<any> {
     const {
   username,
   firstname,
@@ -70,6 +70,7 @@ const minerPayload = {
         username,
         password: hashedPassword,
         role: 'miner',
+        isEmailVerified:true
      
       })
     if (!user.email) {
@@ -77,11 +78,29 @@ const minerPayload = {
       throw new Error('Missing email for verification');
     }
       await Miner.create({...minerPayload,userId:user.id})
+                 let returnUser:AuthUser ={
+      role:user.role,
+      userId:user.id,
+      username:'admin',
+      roleId:user.id
+      }
+      if(user.role === 'miner'){
+        const client = await Miner.findOne({where:{userId:user.id}})
+        if(!client){
+          throw new NotFoundError('Client not found')
+        }
+        returnUser.username=client?.firstname
+        returnUser.roleId
+      }
+      const { accessToken, refreshToken } = this.generateTokenPair(user)
+  
+      logger.info('Sign up completed successfully', { userId: user.id })
+      return { user:returnUser, accessToken, refreshToken }
 
-      const response = await this.verificationService.intiateEmailVerificationProcess(user)
+      // const response = await this.verificationService.intiateEmailVerificationProcess(user)
 
       logger.info('Sign up completed successfully', { userId: user.id })
-      return response
+      // return response
     } catch (error) {
       return this.handleAuthError('Sign up', { email: data.email }, error)
     }
@@ -90,7 +109,7 @@ const minerPayload = {
   /**
    * Creates a sports admin.
    */
-  async signUpAdmin(data: SignUpRequestDto): Promise<SignUpResponseDto> {
+  async signUpAdmin(data: SignUpRequestDto): Promise<any> {
     try {
       logger.info('Admin sign up started', { email: data.email })
 
@@ -101,10 +120,28 @@ const minerPayload = {
         role: 'admin',
         isEmailVerified:true
       })
-      const response = await this.verificationService.intiateEmailVerificationProcess(user)
-   
+           let returnUser:AuthUser ={
+      role:user.role,
+      userId:user.id,
+      username:'admin',
+      roleId:user.id
+      }
+      if(user.role === 'miner'){
+        const client = await Miner.findOne({where:{userId:user.id}})
+        if(!client){
+          throw new NotFoundError('Client not found')
+        }
+        returnUser.username=client?.firstname
+        returnUser.roleId
+      }
+      const { accessToken, refreshToken } = this.generateTokenPair(user)
+  
       logger.info('Sign up completed successfully', { userId: user.id })
-      return response
+      return { user:returnUser, accessToken, refreshToken }
+      // const response = await this.verificationService.intiateEmailVerificationProcess(user)
+   
+
+      // return response
     } catch (error) {
       return this.handleAuthError('Admin sign up', { email: data.email }, error)
     }
