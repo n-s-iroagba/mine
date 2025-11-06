@@ -35,7 +35,7 @@ export class EmailHelper {
       }
 
       const mailOptions = {
-        from: 'Satoshi Vertex',
+        from: '"Satoshi Vertex" <info@satoshivertex.com>',
         to: options.to,
         subject: options.subject,
         html: options.html,
