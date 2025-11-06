@@ -26,7 +26,7 @@ export default function AdminSignupPage() {
     try {
     // const data = await apiService.post(API_ROUTES.AUTH.SIGNUP_ADMIN,formData)
     //     router.push(`/auth/verify-email/${data.data.verificationToken}`);
-        const response = await apiService.post(API_ROUTES.AUTH.SIGNUP_MINER, formData);
+        const response = await apiService.post(API_ROUTES.AUTH.SIGNUP_ADMIN, formData);
            setUser(response.data.user)
           apiService.setAuthToken(response.data.accessToken);
           router.push(`/${response.data.user.role}/dashboard`)
