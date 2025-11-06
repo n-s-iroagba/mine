@@ -90,7 +90,7 @@ const minerPayload = {
   /**
    * Creates a sports admin.
    */
-  async signUpAdmin(data: SignUpRequestDto): Promise<any> {
+  async signUpAdmin(data: SignUpRequestDto): Promise<SignUpResponseDto> {
     try {
       logger.info('Admin sign up started', { email: data.email })
 
@@ -101,10 +101,10 @@ const minerPayload = {
         role: 'admin',
         isEmailVerified:true
       })
-     // const response = await this.verificationService.intiateEmailVerificationProcess(user)
+      const response = await this.verificationService.intiateEmailVerificationProcess(user)
    
       logger.info('Sign up completed successfully', { userId: user.id })
-      return {a:''}
+      return response
     } catch (error) {
       return this.handleAuthError('Admin sign up', { email: data.email }, error)
     }

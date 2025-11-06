@@ -3483,3 +3483,5 @@
 {"hasEmailVerificationSecret":false,"hasRefreshSecret":false,"hasResetPasswordSecret":false,"level":"info","message":"TokenService initialized successfully","service":"cryptominer-api","timestamp":"2025-11-06 18:21:58"}
 {"hasEmailVerificationSecret":false,"hasRefreshSecret":false,"hasResetPasswordSecret":false,"level":"info","message":"TokenService initialized successfully","service":"cryptominer-api","timestamp":"2025-11-06 18:56:23"}
 {"hasEmailVerificationSecret":false,"hasRefreshSecret":false,"hasResetPasswordSecret":false,"level":"info","message":"TokenService initialized successfully","service":"cryptominer-api","timestamp":"2025-11-06 18:56:23"}
+{"hasEmailVerificationSecret":false,"hasRefreshSecret":false,"hasResetPasswordSecret":false,"level":"info","message":"TokenService initialized successfully","service":"cryptominer-api","timestamp":"2025-11-06 19:02:37"}
+{"hasEmailVerificationSecret":false,"hasRefreshSecret":false,"hasResetPasswordSecret":false,"level":"info","message":"TokenService initialized successfully","service":"cryptominer-api","timestamp":"2025-11-06 19:02:37"}
