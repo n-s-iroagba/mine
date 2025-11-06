@@ -12,20 +12,23 @@ import { requestLogger } from './middlewares/requestLogger';
 
 const app = express();
 
-// CORS should be FIRST
-app.use(
-  cors({
-    origin: [
-      'http://localhost:3000',
-      'https://satoshivertex.com',
-      'https://www.satoshivertex.com',
-    ],
-    credentials: true,
-  })
-);
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'https://satoshivertex.com',
+    'https://www.satoshivertex.com',
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Accept'],
+};
 
-// Explicit preflight handler
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// Remove the explicit OPTIONS handler or modify it
+app.options('*', cors(corsOptions));
 app.use(cookieParser())
 
 
