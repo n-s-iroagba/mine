@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { UserCircleIcon,  LockClosedIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { API_ROUTES, apiService } from '@/services';
+import { ApiError } from '@/types/api';
 
 
 interface FormState {
@@ -52,10 +53,10 @@ const token = response.data.accessToken;
 apiService.setAuthToken(token);
 router.push(`/admin/dashboard`);
 } catch (err: unknown) {
-  let msg = 'Unexpected error';
-  if (err instanceof Error) msg = err.message;
-  console.error('Error in login handleSubmit function', err);
-  setError(msg);
+       let msg = "Unexpected error";
+     const error = err as ApiError
+       console.error( err);
+       setError(error.response.data.message||msg);
 } finally {
   setSubmitting(false);
 }

@@ -10,6 +10,13 @@ export interface ApiResponse<T = any> {
     totalPages: number;
   };
 }
+export interface ApiError{
+response:{
+data:{
+  message:string
+}
+}
+}
 
 // Auth types
 export interface LoginCredentials {

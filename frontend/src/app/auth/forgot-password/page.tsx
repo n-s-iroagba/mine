@@ -8,6 +8,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { API_ROUTES, apiService } from "@/services";
+import { ApiError } from "@/types/api";
+
 
 
 interface FormState {
@@ -49,9 +51,9 @@ export default function LoginPage() {
      setMessage('A password reset email has been sent to your email address.')
     } catch (err: unknown) {
       let msg = "Unexpected error";
-      if (err instanceof Error) msg = err.message;
+    const error = err as ApiError
       console.error("Error in  forgot password handleSubmit function", err);
-      setError(msg);
+      setError(error.response.data.message||msg);
     } finally {
       setSubmitting(false);
     }

@@ -7,9 +7,7 @@ declare global {
     interface UserPayload {
       userId: number;
       role: string;
-
       email:string
-
     }
 
     interface Request {

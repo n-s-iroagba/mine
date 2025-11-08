@@ -6,13 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_ROUTES, apiService } from '@/services';
 import { useAuth } from '@/context/AuthContext';
-interface ApiError{
-response:{
-data:{
-  message:string
-}
-}
-}
+import { ApiError } from '@/types/api';
+
 export default function AdminSignupPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -37,10 +32,11 @@ export default function AdminSignupPage() {
           apiService.setAuthToken(response.data.accessToken);
           router.push(`/${response.data.user.role}/dashboard`)
 
-    } catch (err) {
-      const error = err as ApiError
-      console.error(err)
-      setError(error.response.data.message);
+    } catch (err: unknown) {
+      let msg = "Unexpected error";
+    const error = err as ApiError
+      console.error( err);
+      setError(error.response.data.message||msg);
     } finally {
       setIsLoading(false);
     }

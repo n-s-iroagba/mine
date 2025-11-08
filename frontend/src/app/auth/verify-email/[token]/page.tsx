@@ -6,6 +6,7 @@ import { CheckCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import { API_ROUTES, apiService } from "@/services";
 import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/types/api";
 
 
 
@@ -74,7 +75,10 @@ const VerifyEmail = () => {
     apiService.setAuthToken(response.data.accessToken);
     router.push(`/${response.data.user.role}/dashboard`)
     } catch (err) {
-      setMessage('Error verifying email.')
+            let msg = "Unexpected error";
+          const error = err as ApiError
+            console.error( err);
+            setMessage(error.response.data.message||msg);
       console.error(err)
       setSubmitting(false)
 

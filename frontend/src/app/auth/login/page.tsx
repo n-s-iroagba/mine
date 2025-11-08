@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_ROUTES, apiService } from '@/services';
 import { useAuth } from '@/context/AuthContext';
+import { ApiError } from '@/types/api';
 
 export default function LoginPage() {
   const {setUser} = useAuth()
@@ -27,7 +28,10 @@ export default function LoginPage() {
     setUser(data.data.user)
     router.push(`/${data.data.user.role}/dashboard`)
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      let msg = "Unexpected error";
+      const error = err as ApiError
+      console.error( err);
+      setError(error.response.data.message||msg);
     } finally {
       setIsLoading(false);
     }

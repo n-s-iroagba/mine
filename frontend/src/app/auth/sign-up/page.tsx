@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_ROUTES, apiService, authService } from '@/services';
 import { useAuth } from '@/context/AuthContext';
+import { ApiError } from '@/types/api';
 
 export default function MinerSignupPage() {
   const router = useRouter();
@@ -91,7 +92,10 @@ const handleProfileSubmit = async (e: React.FormEvent) => {
       apiService.setAuthToken(response.data.accessToken);
       router.push(`/${response.data.user.role}/dashboard`)
   } catch (err: any) {
-    setError(err.message || 'Failed to create account. Please try again.');
+      let msg = "Failed to create acccout try again later";
+    const error = err as ApiError
+      console.error( err);
+      setError(error.response.data.message||msg);
   } finally {
     setIsLoading(false);
   }
