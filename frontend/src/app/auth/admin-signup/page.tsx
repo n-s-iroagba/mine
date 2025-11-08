@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { API_ROUTES, apiService } from '@/services';
 import { useAuth } from '@/context/AuthContext';
-
+interface ApiError{
+response:{
+data:{
+  message:string
+}
+}
+}
 export default function AdminSignupPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +38,9 @@ export default function AdminSignupPage() {
           router.push(`/${response.data.user.role}/dashboard`)
 
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      const error = err as ApiError
+      console.error(err)
+      setError(error.response.data.message);
     } finally {
       setIsLoading(false);
     }

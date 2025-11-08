@@ -67,7 +67,7 @@ abstract class BaseRepository<T extends Model> {
       const record = await this.model.create(data, options)
       return record
     } catch (error) {
-      throw new Error(`Error creating ${this.model.name}: ${(error as Error).message}`)
+      throw  error
     }
   }
 
