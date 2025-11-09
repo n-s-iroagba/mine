@@ -137,7 +137,7 @@ export default function KYCFeeManagementPage() {
 
   const getSelectedMinerEmail = () => {
     const selectedMiner = miners.find(miner => miner.id === parseInt(newFeeData.minerId));
-    return selectedMiner?.email || '';
+    return selectedMiner?.userId || '';
   };
 
   const columns = [
@@ -366,7 +366,7 @@ export default function KYCFeeManagementPage() {
                 <SelectContent>
                   {miners.map((miner) => (
                     <SelectItem key={miner.id} value={miner.id.toString()}>
-                      {miner.label}
+                      {miner.firstname}     {miner.lastname}
                     </SelectItem>
                   ))}
                 </SelectContent>
