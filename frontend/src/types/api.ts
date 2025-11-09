@@ -323,3 +323,17 @@ export interface BulkEmailResult {
   sent: number;
   failed: number;
 }
+
+export interface Miner {
+  id: number;
+  userId: number;
+  firstname: string;
+  lastname: string;
+  country: string;
+  age: number;
+  phone: string;
+  walletAddress?: string;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}

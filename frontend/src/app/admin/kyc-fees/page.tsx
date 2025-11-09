@@ -1,10 +1,12 @@
+// components/KYCFeeManagementPage.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { kycFeeService } from '../../../services/kycFeeService';
-import { KYCFee, KYCFeeStats, CreateKYCFeeData } from '../../../types/api';
+import { minerService } from '../../../services/minerService';
+import { KYCFee, KYCFeeStats, CreateKYCFeeData, Miner } from '../../../types/api';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { DataTable } from '@/components/ui/table';
@@ -12,10 +14,15 @@ import { formatDate, formatCurrency } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+
 
 export default function KYCFeeManagementPage() {
   const [kycFees, setKycFees] = useState<KYCFee[]>([]);
+  const [miners, setMiners] = useState<Miner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [minersLoading, setMinersLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stats, setStats] = useState<KYCFeeStats | null>(null);
@@ -32,6 +39,7 @@ export default function KYCFeeManagementPage() {
   useEffect(() => {
     loadKYCFees();
     loadStats();
+    loadMiners();
   }, [statusFilter]);
 
   const loadKYCFees = async () => {
@@ -61,6 +69,18 @@ export default function KYCFeeManagementPage() {
       setStats(statsData);
     } catch (error) {
       console.error('Failed to load KYC fee stats:', error);
+    }
+  };
+
+  const loadMiners = async () => {
+    try {
+      setMinersLoading(true);
+      const minersData = await minerService.getAllMiners();
+      setMiners(minersData);
+    } catch (error) {
+      console.error('Failed to load miners:', error);
+    } finally {
+      setMinersLoading(false);
     }
   };
 
@@ -96,7 +116,7 @@ export default function KYCFeeManagementPage() {
       await kycFeeService.createKYCFee({
         minerId: parseInt(newFeeData.minerId),
         amount: amount,
-   
+  
       });
       
       await loadKYCFees();
@@ -109,10 +129,15 @@ export default function KYCFeeManagementPage() {
       });
     } catch (error) {
       console.error('Failed to create KYC fee:', error);
-      alert('Failed to create KYC fee. Please check if the miner ID is valid.');
+      alert('Failed to create KYC fee. Please try again.');
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const getSelectedMinerEmail = () => {
+    const selectedMiner = miners.find(miner => miner.id === parseInt(newFeeData.minerId));
+    return selectedMiner?.email || '';
   };
 
   const columns = [
@@ -329,17 +354,30 @@ export default function KYCFeeManagementPage() {
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="minerId">Miner ID *</Label>
-              <Input
-                id="minerId"
-                type="number"
+              <Label htmlFor="miner">Select Miner *</Label>
+              <Select
                 value={newFeeData.minerId}
-                onChange={(e) => setNewFeeData({...newFeeData, minerId: e.target.value})}
-                placeholder="Enter miner ID"
-                min="1"
-              />
+                onValueChange={(value) => setNewFeeData({...newFeeData, minerId: value})}
+                disabled={minersLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={minersLoading ? "Loading miners..." : "Select a miner"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {miners.map((miner) => (
+                    <SelectItem key={miner.id} value={miner.id.toString()}>
+                      {miner.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {newFeeData.minerId && (
+                <p className="text-xs text-green-600">
+                  Selected miner email: {getSelectedMinerEmail()}
+                </p>
+              )}
               <p className="text-xs text-gray-500">
-                Enter the ID of the miner who needs to pay the KYC fee
+                Select the miner who needs to pay the KYC fee
               </p>
             </div>
 
@@ -384,8 +422,6 @@ export default function KYCFeeManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-     
     </div>
   );
 }

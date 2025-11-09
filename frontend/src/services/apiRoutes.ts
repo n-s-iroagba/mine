@@ -113,6 +113,12 @@ export const API_ROUTES = {
     create: '/kyc',
     updateStatus: (id: number) => `/kyc/${id}/status`,
   },
+    miners: {
+    getAll: '/miners',
+    getById: (id: number) => `/miners/${id}`,
+    update: (id: number) => `/miners/${id}`,
+    delete: (id: number) => `/miners/${id}`,
+  },
 
   // KYC Fee Routes
   kycFees: {

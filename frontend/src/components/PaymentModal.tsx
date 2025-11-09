@@ -43,11 +43,11 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
   const [amountInUSD, setAmountInUSD] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [coins, setCoins]=useState<Coin[]>([])
+
   const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
   const [subscriptionCreated, setSubscriptionCreated] = useState(false);
   const [createdSubscriptionId, setCreatedSubscriptionId] = useState<number | null>(null);
-  const { data, loading: coinsLoading } = useCoins();
+  const { data:coins, loading: coinsLoading } = useCoins();
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -73,29 +73,18 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
       setSubscriptionCreated(true);
       setCreatedSubscriptionId(subscription.id);
       
-      // Pre-fill coin selection from existing subscription
-      if (data && subscription.symbol) {
-        data.push({    
-    id: '',
-    symbol:'XAUUSD' ,
-    name:'GOLD' ,
-    image: "https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png?1696501409",
-    current_price: 0,
-    market_cap: 0,
-    total_volume: 0,
-})
-        setCoins(data)
-        const existingCoin = coins.find((coin: Coin) =>
+ 
+        const existingCoin = coins?.find((coin: Coin) =>
           coin.symbol.toLowerCase() === subscription.symbol?.toLowerCase()
         );
         if (existingCoin) {
           setSelectedCoin(existingCoin);
         }
+           setStep('method')
       }
-      
-      // Skip to payment method step for existing subscriptions
-      setStep('method');
-    }
+ 
+ 
+    
   }, [isExistingSubscription, subscription, coins]);
 
   // Reset state when modal closes
