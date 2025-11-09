@@ -144,29 +144,30 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
       setStep('details');
     }
   };
+const createSubscription = async () => {
+  if (!selectedCoin) {
+    setError('Please select a coin first');
+    return null;
+  }
 
-  const createSubscription = async () => {
-    if (!selectedCoin) {
-      setError('Please select a coin first');
-      return null;
-    }
+  try {
+    const response = await apiService.post(API_ROUTES.subscriptions.create(minerId), {
+      miningContractId: contract.id,
+      currency: selectedCoin.name,
+      symbol: selectedCoin.image,
+      Id: minerId,
+    });
 
-    try {
-      const newSubscription = await apiService.post(API_ROUTES.subscriptions.create(minerId), {
-        miningContractId: contract.id,
-        currency: selectedCoin.name,
-        symbol: selectedCoin.image,
-        Id: minerId,
-      });
+    const newSubscription = response.data; // ✅ extract the data
+    setSubscriptionCreated(true);
+    setCreatedSubscriptionId(newSubscription.id); // ✅ now this will not be undefined
+    return newSubscription.id;
+  } catch (err) {
+    setError('Failed to create subscription. Please try again.');
+    return null;
+  }
+};
 
-      setSubscriptionCreated(true);
-      setCreatedSubscriptionId(newSubscription.id);
-      return newSubscription.id;
-    } catch (err) {
-      setError('Failed to create subscription. Please try again.');
-      return null;
-    }
-  };
 
   const handlePaymentSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
