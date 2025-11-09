@@ -136,7 +136,7 @@ export default function AdminMiningServersPage() {
               View
             </Button>
           </Link>
-          <Link href={`/admin/servers/edit/${row.id}`}>
+          <Link href={`/admin/servers/${row.id}/edit`}>
             <Button variant="outline" size="sm">
               Edit
             </Button>
