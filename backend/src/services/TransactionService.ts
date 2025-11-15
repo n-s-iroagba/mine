@@ -1,33 +1,37 @@
-import { TransactionRepository, MiningSubscriptionRepository, UserRepository } from '../repositories';
-import { AppError, BaseService, CryptoHelper, EmailHelper, NotFoundError, ValidationError } from './utils';
-
-import { TransactionAttributes } from '../models/Transaction';
+import { TransactionRepository, MiningSubscriptionRepository, UserRepository, KYCFeeRepository, MiningContractRepository } from '../repositories';
+import { BadRequestError, BaseService, EmailHelper, NotFoundError, ValidationError } from './utils';
+import Transaction, { TransactionAttributes } from '../models/Transaction';
 import Miner from '../models/Miner';
-import { KYC, KYCFee } from '../models';
+import { KYC, KYCFee, MiningContract } from '../models';
+import { DepositStatus } from '../models/MiningSubscription';
 
 export interface CreateTransactionData {
   amountInUSD: number;
   entityId: number;
   entity: 'subscription' | 'kyc';
   minerId: number;
-   reciept:string
+  reciept: string;
 }
 
 export interface UpdateTransactionStatusData {
   status: 'pending' | 'successful' | 'failed';
-  amountInUSD:number
+  amountInUSD: number;
 }
 
 export class TransactionService extends BaseService {
   private transactionRepository: TransactionRepository;
   private miningSubscriptionRepository: MiningSubscriptionRepository;
   private userRepository: UserRepository;
+  private kycFeeRepository: KYCFeeRepository;
+  private miningContractRepository: MiningContractRepository;
 
   constructor() {
     super('TransactionService');
     this.transactionRepository = new TransactionRepository();
     this.miningSubscriptionRepository = new MiningSubscriptionRepository();
     this.userRepository = new UserRepository();
+    this.kycFeeRepository = new KYCFeeRepository();
+    this.miningContractRepository = new MiningContractRepository();
   }
 
   async createTransaction(transactionData: CreateTransactionData): Promise<TransactionAttributes> {
@@ -37,8 +41,6 @@ export class TransactionService extends BaseService {
         entity: transactionData.entity,
         amount: transactionData.amountInUSD
       });
-
-  
 
       // Validate miner exists
       const miner = await this.userRepository.findById(transactionData.minerId);
@@ -52,6 +54,11 @@ export class TransactionService extends BaseService {
         if (!subscription) {
           throw new NotFoundError('Mining subscription');
         }
+      } else if (transactionData.entity === 'kyc') {
+        const kyc = await this.kycFeeRepository.findById(transactionData.entityId);
+        if (!kyc) {
+          throw new NotFoundError('Kyc fee not found');
+        }
       }
 
       // Validate amount is positive
@@ -64,9 +71,19 @@ export class TransactionService extends BaseService {
         throw new ValidationError('Invalid entity type');
       }
 
+      // Update deposit status to pending
+      if (transactionData.entity === 'subscription') {
+        await this.miningSubscriptionRepository.update(transactionData.entityId, {
+          depositStatus: DepositStatus.PENDING
+        });
+      } else if (transactionData.entity === 'kyc') {
+        await this.kycFeeRepository.update(transactionData.entityId, {
+          depositStatus: DepositStatus.PENDING
+        });
+      }
+
       const transaction = await this.transactionRepository.create({
         ...transactionData,
-
         status: 'pending',
       });
 
@@ -121,6 +138,7 @@ export class TransactionService extends BaseService {
   }
 
   async updateTransactionStatus(id: number, statusData: UpdateTransactionStatusData): Promise<TransactionAttributes> {
+    console.log(statusData)
     try {
       this.logInfo('Updating transaction status', { transactionId: id, status: statusData.status });
 
@@ -128,45 +146,54 @@ export class TransactionService extends BaseService {
       if (!transaction) {
         throw new NotFoundError('Transaction');
       }
-        transaction.amountInUSD = statusData.amountInUSD
 
+      transaction.amountInUSD = statusData.amountInUSD;
 
+      // If transaction is successful, handle the payment
+      if (statusData.status === 'successful') {
+        transaction.status = 'successful';
+        await transaction.save();
 
-     
-      
+        if (transaction.entity === 'subscription') {
+       
+          await this.handleSuccessfulSubscriptionPayment(transaction.entityId, statusData.amountInUSD,transaction);
+        } else if (transaction.entity === 'kyc') {
+          await this.handleSuccessfulKycPayment(transaction.entityId, statusData.amountInUSD, transaction.createdAt);
+        }else{
+          throw new BadRequestError('Transaction entity not found')
+        }
 
-      // If transaction is successful and is for subscription, handle subscription activation
-      if (statusData.status === 'successful'){
-        transaction.status = 'successful'
-        await transaction.save()
-        if(transaction.entity === 'subscription') {
-        
-        await this.handleSuccessfulSubscriptionPayment(transaction.entityId,statusData.amountInUSD);
-      }
+        // Send email notification for successful transactions
+        const miner = await Miner.findByPk(transaction.minerId);
+        if (miner) {
+          const user = await this.userRepository.findById(miner.userId);
+          if (user) {
+            await EmailHelper.sendEmail({
+              to: user.email,
+              subject: 'Payment Confirmed',
+              html: EmailHelper.generatePaymentConfirmationEmail(
+                `${miner.firstname} ${miner.lastname}`,
+                transaction.amountInUSD,
+                transaction.entity
+              ),
+            });
+          }
+        }
+      } else if (statusData.status === 'failed') {
+        transaction.status = 'failed';
+        await transaction.save();
 
-        if (transaction.entity === 'kyc') {
-        
-        await this.handleSuccessfulKycPayment(transaction.entityId,statusData.amountInUSD,transaction.createdAt);
-      }
-
-      // Send email notification for successful transactions
-     
-        const miner = await Miner.findByPk(transaction.minerId)
-          if (miner) {
-        const user = await this.userRepository.findById(miner.userId);
-      
-          await EmailHelper.sendEmail({
-            to: user.email,
-            subject: 'Payment Confirmed',
-            html: EmailHelper.generatePaymentConfirmationEmail(
-              `${miner.firstname} ${miner.lastname}`,
-              transaction.amountInUSD,
-              transaction.entity
-            ),
+        // Reset deposit status if payment failed
+        if (transaction.entity === 'subscription') {
+          await this.miningSubscriptionRepository.update(transaction.entityId, {
+            depositStatus: DepositStatus.NO_DEPOSIT
+          });
+        } else if (transaction.entity === 'kyc') {
+          await this.kycFeeRepository.update(transaction.entityId, {
+            depositStatus: DepositStatus.NO_DEPOSIT
           });
         }
       }
-
 
       return transaction.get({ plain: true });
     } catch (error) {
@@ -178,8 +205,6 @@ export class TransactionService extends BaseService {
     try {
       this.logInfo('Fetching transactions by status', { status });
 
-
-
       const transactions = await this.transactionRepository.findByStatus(status);
       return transactions.map(transaction => transaction.get({ plain: true }));
     } catch (error) {
@@ -187,37 +212,72 @@ export class TransactionService extends BaseService {
     }
   }
 
-  private async handleSuccessfulSubscriptionPayment(subscriptionId: number,amountDeposited :number): Promise<void> {
+  private async handleSuccessfulSubscriptionPayment(subscriptionId: number, amountDeposited: number,transaction:Transaction): Promise<void> {
     try {
       const subscription = await this.miningSubscriptionRepository.findById(subscriptionId);
-      if (subscription && !subscription.isActive) {
-        await this.miningSubscriptionRepository.update(subscriptionId, { isActive: true,amountDeposited });
-        this.logInfo('Subscription activated after successful payment', { subscriptionId });
+      if (!subscription) {
+        throw new NotFoundError('Mining subscription');
       }
+
+      const miningContract = await this.miningContractRepository.findById(subscription.miningContractId);
+      if (!miningContract) {
+        throw new NotFoundError('Mining contract');
+      }
+      
+      // Calculate total deposited amount
+      const totalDeposited = subscription.amountDeposited + amountDeposited;
+
+      // Determine deposit status based on amount comparison
+      let depositStatus: DepositStatus;
+      if (totalDeposited >= miningContract.minimumDeposit) {
+        depositStatus = DepositStatus.COMPLETE_DEPOSIT;
+      } else if (totalDeposited > 0) {
+        depositStatus = DepositStatus.INCOMPLETE;
+      } else {
+        depositStatus = DepositStatus.NO_DEPOSIT;
+      }
+      if(!subscription.amountDeposited||subscription.amountDeposited===0){
+        subscription.dateOfFirstPayment = transaction.createdAt
+      }
+      // Update subscription with new amount and status
+       
+        subscription.amountDeposited =totalDeposited,
+        subscription.depositStatus = depositStatus
+      
+       await subscription.save()
+      this.logInfo('Subscription payment processed successfully', {
+        subscriptionId,
+        amountDeposited,
+        totalDeposited,
+        depositStatus
+      });
     } catch (error) {
-      this.logError('Failed to activate subscription after payment', error);
+      this.logError('Failed to process subscription payment', error);
+      throw error;
     }
   }
 
-
-    private async handleSuccessfulKycPayment(kycId: number,amountDeposited :number,time:Date): Promise<void> {
+  private async handleSuccessfulKycPayment(kycId: number, amountDeposited: number, time: Date): Promise<void> {
     try {
-      const kyc = await KYC.findByPk(kycId)
-      if (kyc) {
-        const kycFee =  await KYCFee.findOne({where:{minerId:kyc.minerId}})
-        if(kycFee){
-          kycFee.isPaid =true
-            kycFee.amount =amountDeposited,
-  kycFee.isPaid=true;
-  kycFee.paidAt=time;
-  await kyc.save()
-        }
-        this.logInfo('kyc activated after successful payment', { kycId });
+      const kycFee = await this.kycFeeRepository.findById(kycId);
+      if (!kycFee) {
+        throw new NotFoundError('KYC fee');
       }
+
+      // Update KYC fee payment details
+      await this.kycFeeRepository.update(kycId, {
+        amount: amountDeposited,
+        depositStatus: DepositStatus.COMPLETE_DEPOSIT,
+        paidAt: time
+      });
+
+      this.logInfo('KYC payment processed successfully', { kycId, amountDeposited });
     } catch (error) {
-      this.logError('Failed to activate kyc after payment', error);
+      this.logError('Failed to process KYC payment', error);
+      throw error;
     }
   }
+
   async getTransactionStats(): Promise<any> {
     try {
       this.logInfo('Fetching transaction statistics');

@@ -108,32 +108,8 @@ const sortedBanks = [...banks].sort((a, b) => {
         <span className="text-sm text-gray-600">{value || '-'}</span>
       ),
     },
-    {
-      key: 'isActive',
-      label: 'Status',
-      mobilePriority: 4,
-      render: (value: boolean, row: Bank) => (
-        <div className="flex items-center space-x-2">
-          <Badge variant={value ? 'secondary' : 'default'}>
-            {value ? 'Active' : 'Inactive'}
-          </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleToggleStatus(row.id, value)}
-            className="h-6 text-xs"
-          >
-            {value ? 'Deactivate' : 'Activate'}
-          </Button>
-        </div>
-      ),
-    },
-    {
-      key: 'createdAt',
-      label: 'Created',
-      sortable: true,
-      render: (value: string) => new Date(value).toLocaleDateString(),
-    },
+
+
     {
       key: 'actions',
       label: 'Actions',
@@ -160,6 +136,13 @@ const sortedBanks = [...banks].sort((a, b) => {
           </Button>
         </div>
       ),
+    },
+
+        {
+      key: 'createdAt',
+      label: 'Created',
+      sortable: true,
+      render: (value: string) => new Date(value).toLocaleDateString(),
     },
   ];
 

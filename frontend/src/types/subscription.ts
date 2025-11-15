@@ -1,18 +1,26 @@
 import { Transaction } from "./api";
 
+export enum DepositStatus {
+  NO_DEPOSIT = "no deposit",
+  PENDING = 'deposit pending approval',
+  INCOMPLETE = 'incomplete deposit',
+  COMPLETE_DEPOSIT = 'complete deposit'
+}
+
 export interface MiningSubscription {
   id: number;
   miningContractId: number;
   amountDeposited: number;
   shouldUpdateAutomatically: boolean;
-  earnings: number;
+  totalEarnings: number;
   minerId: number;
-  currency:string
-  symbol:string
-  isActive: boolean;
+  currency: string;
+  symbol: string;
+  dateOfFirstPayment:Date
+  depositStatus: DepositStatus;
   createdAt: Date;
   updatedAt: Date;
-  miner:any
+miner:any
 }
 export interface MiningSubscriptionWithTransactions extends MiningSubscription{
   transactions:Transaction[]

@@ -30,8 +30,8 @@ export class CalculationHelper {
     }
   }
 
-  static calculateTotalEarnings(subscriptions: Array<{ earnings: number }>): number {
-    return subscriptions.reduce((total, sub) => total + sub.earnings, 0);
+  static calculateTotalEarnings(subscriptions: Array<{ totalEarnings: number }>): number {
+    return subscriptions.reduce((total, sub) => total + sub.totalEarnings, 0);
   }
 
   static calculateTotalDeposits(subscriptions: Array<{ amountDeposited: number }>): number {

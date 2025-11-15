@@ -17,7 +17,6 @@ interface BankFormData {
   accountName: string;
   branch: string;
   swiftCode: string;
-  isActive: boolean;
 }
 
 interface BankFormProps {
@@ -38,7 +37,7 @@ export function BankForm({ bank, isEdit = false }: BankFormProps) {
     accountName: '',
     branch: '',
     swiftCode: '',
-    isActive: true,
+
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -51,7 +50,7 @@ export function BankForm({ bank, isEdit = false }: BankFormProps) {
         accountName: bank.accountName,
         branch: bank.branch || '',
         swiftCode: bank.swiftCode || '',
-        isActive: bank.isActive,
+      
       });
     }
   }, [bank]);
@@ -201,14 +200,7 @@ export function BankForm({ bank, isEdit = false }: BankFormProps) {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked: boolean) => handleInputChange('isActive', checked)}
-              />
-              <Label htmlFor="isActive">Active Bank Account</Label>
-            </div>
+     
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button

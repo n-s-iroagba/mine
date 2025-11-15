@@ -1,3 +1,5 @@
+import { MiningSubscription } from "./subscription";
+
 // Base API response type
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -41,7 +43,7 @@ export interface AuthResponse {
     lastname: string;
     phone?: string;
     role: 'admin' | 'miner';
-    isActive: boolean;
+
     createdAt: string;
     updatedAt: string;
   };
@@ -56,7 +58,6 @@ export interface User {
   lastname: string;
   phone?: string;
   role: 'admin' | 'miner';
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -74,7 +75,6 @@ export interface AdminWallet {
   logo: string;
   address: string;
   currency: string;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -100,7 +100,6 @@ export interface MiningServer {
   name: string;
   hashRate: string;
   powerConsumptionInKwH: string;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -125,7 +124,6 @@ export interface MiningContract {
   periodReturn: number;
   period: 'daily' | 'weekly' | 'fortnightly' | 'monthly'
   minimumDeposit:number
-  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -154,7 +152,6 @@ export interface Bank {
   accountName: string;
   branch?: string;
   swiftCode?: string;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -196,7 +193,7 @@ export interface MinerDashboard {
     id: number;
     amountDeposited: number;
     earnings: number;
-    isActive: boolean;
+
     createdAt: string;
     miningContract: MiningContract;
   }>;
@@ -333,7 +330,108 @@ export interface Miner {
   age: number;
   phone: string;
   walletAddress?: string;
-  isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+}
+export interface Earning {
+  id: number;
+  miningSubscriptionId: number;
+  amount: number;
+  date: string; // ISO string format
+  createdAt: string;
+  updatedAt: string;
+  
+  // Optional nested relationships (if included in API responses)
+  miningSubscription?: MiningSubscription;
+}
+
+export interface EarningCreationAttributes {
+  miningSubscriptionId: number;
+  amount: number;
+  date: string; // ISO string format or Date object that will be serialized
+}
+
+export interface EarningUpdateAttributes {
+  amount?: number;
+  date?: string;
+}
+
+// Earning Statistics/Summary Types
+export interface EarningSummary {
+  totalEarnings: number;
+  totalEarningsThisMonth: number;
+  earningsGrowth: number; // percentage
+  recentEarnings: Earning[];
+}
+
+export interface SubscriptionEarnings {
+  subscriptionId: number;
+  subscriptionName?: string;
+  totalEarnings: number;
+  earnings: Earning[];
+  currency: string;
+}
+
+export interface EarningsChartData {
+  date: string;
+  earnings: number;
+  subscriptionCount: number;
+}
+
+export interface EarningsFilter {
+  startDate?: string;
+  endDate?: string;
+  miningSubscriptionId?: number;
+  minerId?: number;
+}
+
+// Earning API Response Types
+export interface EarningsResponse {
+  earnings: Earning[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface EarningStatsResponse {
+  totalEarnings: number;
+  averageDailyEarnings: number;
+  earningsThisMonth: number;
+  earningsGrowth: number;
+  chartData: EarningsChartData[];
+}
+
+// Request Payload Types
+export interface CreateEarningRequest {
+  miningSubscriptionId: number;
+  amount: number;
+  date: string;
+}
+
+export interface UpdateEarningRequest {
+  amount?: number;
+  date?: string;
+}
+
+export interface EarningsQueryParams {
+  startDate?: string;
+  endDate?: string;
+  miningSubscriptionId?: number;
+  page?: number;
+  limit?: number;
+  sortBy?: 'date' | 'amount' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface ContractAndServer extends MiningContract{
+    miningServer:MiningServer
+}
+export interface FullSubscription extends MiningSubscription{
+    earnings:Earning[]
+    contract:ContractAndServer
+    miner:Miner
+
 }

@@ -99,10 +99,7 @@ export default function BankDetailsPage() {
               <span className="text-gray-600">{bank.swiftCode || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-medium">Status:</span>
-              <Badge variant={bank.isActive ? 'secondary' : 'default'}>
-                {bank.isActive ? 'Active' : 'Inactive'}
-              </Badge>
+              
             </div>
           </CardContent>
         </Card>

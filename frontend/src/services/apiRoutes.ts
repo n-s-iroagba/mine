@@ -76,6 +76,21 @@ export const API_ROUTES = {
     delete: (id: number) => `/banks/${id}`,
   },
 
+    earnings: {
+    // Get earnings by subscription ID
+    getBySubscriptionId: (subscriptionId: string | number) => 
+      `/earnings/subscription/${subscriptionId}`,
+    
+    // Create new earning
+    create: '/earnings',
+    
+    // Update earning
+    update: (id: number) => `/earnings/${id}`,
+    
+    // Delete earning
+    delete: (id: number) => `/earnings/${id}`,
+  },
+
   // Mining Subscription Routes
   subscriptions: {
     getAll: '/subscriptions',

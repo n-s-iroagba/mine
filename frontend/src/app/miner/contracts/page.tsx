@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { PaymentModal } from '@/components/PaymentModal';
 import {  useRequiredAuth } from '@/context/AuthContext';
 import { MiningContract } from '@/types/api';
-import { MiningSubscriptionWithTransactions } from '@/types/subscription';
+import { DepositStatus, MiningSubscriptionWithTransactions } from '@/types/subscription';
 import { useApiQuery } from '@/hooks/useApi';
 
 export default function MiningContractsPage() {
@@ -175,61 +175,146 @@ function LargeContractCard({ contract, isSubscribed, subscription, onSubscribe }
     }
   };
 
-const calculateMiningProgress = () => {
-  if (!subscription || !contract) return 0;
-
-  const totalEarnings = Number(subscription.earnings) || 0;
-  const amountDeposited = Number(subscription.amountDeposited) || 0;
-  const periodReturn = Number(contract.periodReturn) || 0;
-
-  // Prevent division by zero or invalid calculations
-  if (amountDeposited <= 0 || periodReturn <= 0) return 0;
-
-  const totalPotential = amountDeposited * (periodReturn / 100);
-  const progress = (totalEarnings / totalPotential) * 100;
-
-  // Clamp between 0 and 100
-  return Math.min(Math.max(progress, 0), 100);
-};
-
-
-  const calculateDaysLeft = () => {
-    if (!subscription?.createdAt) return 0;
-    const contractDays = 30;
-    const startDate = new Date(subscription.createdAt);
-    const currentDate = new Date();
-    const daysPassed = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.max(contractDays - daysPassed, 0);
+  // Get contract duration in days based on period
+  const getContractDuration = () => {
+    switch (contract.period) {
+      case 'daily': return 1;
+      case 'weekly': return 7;
+      case 'fortnightly': return 14;
+      case 'monthly': return 30;
+      default: return 30;
+    }
   };
 
+  // Calculate mining progress based on earnings vs potential
+  const calculateMiningProgress = () => {
+    if (!subscription || !contract) return 0;
+
+    const totalEarnings = Number(subscription.total) || 0;
+    const amountDeposited = Number(subscription.amountDeposited) || 0;
+    const periodReturn = Number(contract.periodReturn) || 0;
+
+    // Prevent division by zero or invalid calculations
+    if (amountDeposited <= 0 || periodReturn <= 0) return 0;
+
+    const totalPotential = amountDeposited * (periodReturn / 100);
+    const progress = (totalEarnings / totalPotential) * 100;
+
+    // Clamp between 0 and 100
+    return Math.min(Math.max(progress, 0), 100);
+  };
+
+  // Calculate days since first payment for payout eligibility
+  const calculateDaysSinceFirstPayment = () => {
+    if (!subscription?.dateOfFirstPayment) return 0;
+    
+    const firstPaymentDate = new Date(subscription.dateOfFirstPayment);
+    const currentDate = new Date();
+    
+    // Reset both dates to midnight for accurate day calculation
+    const firstPaymentMidnight = new Date(firstPaymentDate.getFullYear(), firstPaymentDate.getMonth(), firstPaymentDate.getDate());
+    const currentDateMidnight = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    
+    const timeDifference = currentDateMidnight.getTime() - firstPaymentMidnight.getTime();
+    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    
+    return Math.max(daysDifference, 0);
+  };
+
+  // Determine payout eligibility based on first deposit date and contract period
+  const isPayoutEligible = () => {
+    if (!subscription?.dateOfFirstPayment) return false;
+    const daysSinceFirstPayment = calculateDaysSinceFirstPayment();
+    const contractDuration = getContractDuration();
+    
+    // Payout becomes eligible after contract duration
+    return daysSinceFirstPayment >= contractDuration;
+  };
+
+  // Calculate next payout date based on contract period
   const calculateNextPayout = () => {
-    if (!subscription?.createdAt) return null;
-    const startDate = new Date(subscription.createdAt);
-    const nextPayout = new Date(startDate);
-    nextPayout.setDate(startDate.getDate() + 7);
+    if (!subscription?.dateOfFirstPayment) return null;
+    
+    const firstPaymentDate = new Date(subscription.dateOfFirstPayment);
+    const daysSinceFirstPayment = calculateDaysSinceFirstPayment();
+    const contractDuration = getContractDuration();
+    
+    // Calculate days until the contract duration is reached
+    const daysUntilEligibility = contractDuration - daysSinceFirstPayment;
+    
+    const nextPayout = new Date();
+    nextPayout.setDate(nextPayout.getDate() + daysUntilEligibility);
     return nextPayout;
   };
 
+  // Calculate withdrawal availability date based on contract period
   const calculateWithdrawalDate = () => {
-    if (!subscription?.createdAt) return null;
-    const startDate = new Date(subscription.createdAt);
-    const withdrawalDate = new Date(startDate);
-    withdrawalDate.setDate(startDate.getDate() + 30);
+    if (!subscription?.dateOfFirstPayment) return null;
+    
+    const firstPaymentDate = new Date(subscription.dateOfFirstPayment);
+    const contractDuration = getContractDuration();
+    const withdrawalDate = new Date(firstPaymentDate);
+    withdrawalDate.setDate(firstPaymentDate.getDate() + contractDuration);
     return withdrawalDate;
+  };
+
+  // Calculate days until withdrawal/payout becomes available
+  const calculateDaysUntilAvailable = () => {
+    if (!subscription?.dateOfFirstPayment) return getContractDuration();
+    
+    const daysSinceFirstPayment = calculateDaysSinceFirstPayment();
+    const contractDuration = getContractDuration();
+    
+    // Days until eligibility
+    const daysUntilEligibility = contractDuration - daysSinceFirstPayment;
+    
+    // Ensure it's never negative and never 0 on the first day
+    return Math.max(daysUntilEligibility, 1);
   };
 
   const calculateROI = () => {
     if (!subscription) return 0;
-    const totalReturn = subscription.earnings || 0;
+    const totalReturn = subscription.total || 0;
     const investment = subscription.amountDeposited || 0;
     return investment > 0 ? (totalReturn / investment) * 100 : 0;
   };
 
+  // Determine card status based on deposit status and amount
+  const getCardStatus = () => {
+    if (!subscription) return 'not_subscribed';
+
+    const { depositStatus, amountDeposited } = subscription;
+
+    switch (depositStatus) {
+      case DepositStatus.NO_DEPOSIT:
+        return 'no_deposit';
+      
+      case DepositStatus.PENDING:
+        if (amountDeposited > 0) {
+          return 'pending_with_amount';
+        } else {
+          return 'pending_no_amount';
+        }
+      
+      case DepositStatus.INCOMPLETE:
+        return 'incomplete_deposit';
+      
+      case DepositStatus.COMPLETE_DEPOSIT:
+        return isPayoutEligible() ? 'active_with_payout' : 'active_mining';
+      
+      default:
+        return 'unknown';
+    }
+  };
+
   const miningProgress = calculateMiningProgress();
-  const daysLeft = calculateDaysLeft();
+  const daysUntilAvailable = calculateDaysUntilAvailable();
+  const daysSinceFirstPayment = calculateDaysSinceFirstPayment();
+  const contractDuration = getContractDuration();
   const nextPayout = calculateNextPayout();
   const withdrawalDate = calculateWithdrawalDate();
   const roi = calculateROI();
+  const cardStatus = getCardStatus();
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -246,9 +331,206 @@ const calculateMiningProgress = () => {
   };
 
   const getStatusColor = (days: number) => {
-    if (days < 7) return 'text-red-600 bg-red-50';
-    if (days < 14) return 'text-orange-600 bg-orange-50';
+    if (days < Math.ceil(contractDuration * 0.25)) return 'text-red-600 bg-red-50';
+    if (days < Math.ceil(contractDuration * 0.5)) return 'text-orange-600 bg-orange-50';
     return 'text-green-600 bg-green-50';
+  };
+
+  // Get period display name
+  const getPeriodDisplayName = () => {
+    switch (contract.period) {
+      case 'daily': return 'Daily';
+      case 'weekly': return 'Weekly';
+      case 'fortnightly': return 'Fortnightly';
+      case 'monthly': return 'Monthly';
+      default: return contract.period;
+    }
+  };
+
+  // Get status badge based on card status
+  const renderStatusBadge = () => {
+    switch (cardStatus) {
+      case 'no_deposit':
+        return (
+          <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200">
+            ⏳ Awaiting Deposit
+          </Badge>
+        );
+      
+      case 'pending_with_amount':
+        return (
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-200">
+            🔄 Verification Pending
+          </Badge>
+        );
+      
+      case 'pending_no_amount':
+        return (
+          <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200">
+            ⚠️ Deposit Required
+          </Badge>
+        );
+      
+      case 'incomplete_deposit':
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+            💰 Complete Deposit
+          </Badge>
+        );
+      
+      case 'active_mining':
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">
+            ⛏️ Active Mining ({daysSinceFirstPayment}/{contractDuration} days)
+          </Badge>
+        );
+      
+      case 'active_with_payout':
+        return (
+          <Badge variant="default" className="bg-emerald-100 text-emerald-700 border-emerald-200">
+            🎉 Ready for Payout!
+          </Badge>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  // Get main action button based on status
+  const renderActionButton = () => {
+    const buttonBaseClass = "w-full py-4 px-6 rounded-xl font-semibold shadow-inner flex items-center justify-center space-x-2 transition-all duration-300";
+    
+    switch (cardStatus) {
+      case 'no_deposit':
+      case 'pending_no_amount':
+        return (
+          <button
+            onClick={() => onSubscribe(contract)}
+            className={`${buttonBaseClass} bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800 transform hover:-translate-y-1`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Start Mining - Deposit Now</span>
+          </button>
+        );
+      
+      case 'pending_with_amount':
+        return (
+          <button
+            className={`${buttonBaseClass} bg-gradient-to-r from-yellow-500 to-orange-600 text-white cursor-not-allowed opacity-90`}
+            disabled
+          >
+            <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Verification in Progress...</span>
+          </button>
+        );
+      
+      case 'incomplete_deposit':
+        return (
+          <button
+            onClick={() => onSubscribe(contract)}
+            className={`${buttonBaseClass} bg-gradient-to-r from-purple-600 to-pink-700 text-white hover:from-purple-700 hover:to-pink-800 transform hover:-translate-y-1`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Complete Deposit to Start Mining</span>
+          </button>
+        );
+      
+      case 'active_mining':
+        return (
+          <button
+            className={`${buttonBaseClass} bg-gradient-to-r from-green-600 to-emerald-700 text-white cursor-not-allowed`}
+            disabled
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>⛏️ Active Mining (Day {daysSinceFirstPayment + 1})</span>
+          </button>
+        );
+      
+      case 'active_with_payout':
+        return (
+          <button
+            onClick={() => onSubscribe(contract)} // This could trigger payout
+            className={`${buttonBaseClass} bg-gradient-to-r from-emerald-600 to-green-700 text-white hover:from-emerald-700 hover:to-green-800 transform hover:-translate-y-1 shadow-lg`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            </svg>
+            <span>💰 Withdraw Earnings</span>
+          </button>
+        );
+      
+      default:
+        return (
+          <button
+            onClick={() => onSubscribe(contract)}
+            className={`${buttonBaseClass} bg-gradient-to-r from-gray-600 to-gray-700 text-white`}
+          >
+            <span>Subscribe to Mine</span>
+          </button>
+        );
+    }
+  };
+
+  // Render payout eligibility section
+  const renderPayoutEligibility = () => {
+    if (!subscription?.dateOfFirstPayment) return null;
+
+    const daysSinceFirstPayment = calculateDaysSinceFirstPayment();
+    const isEligible = isPayoutEligible();
+
+    return (
+      <div className={`rounded-xl p-4 border ${
+        isEligible 
+          ? 'bg-emerald-50 border-emerald-200' 
+          : 'bg-blue-50 border-blue-200'
+      }`}>
+        <div className="flex items-center justify-between mb-2">
+          <h5 className="font-semibold text-gray-900">Payout Status</h5>
+          {isEligible ? (
+            <Badge variant="default" className="bg-emerald-100 text-emerald-700">
+              🎉 Eligible
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-blue-100 text-blue-700">
+              ⏳ Day {daysSinceFirstPayment + 1} of {contractDuration}
+            </Badge>
+          )}
+        </div>
+        
+        <div className="text-sm text-gray-600">
+          {isEligible ? (
+            <p>Your {getPeriodDisplayName().toLowerCase()} earnings are ready for withdrawal! 🎊</p>
+          ) : (
+            <div>
+              <p>
+                <strong>Progress:</strong> {daysSinceFirstPayment} of {contractDuration} days completed
+              </p>
+              <p className="mt-1">
+                <strong>Time remaining:</strong> {daysUntilAvailable} {daysUntilAvailable === 1 ? 'day' : 'days'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {getPeriodDisplayName()} contract • {contract.periodReturn}% return
+              </p>
+            </div>
+          )}
+        </div>
+
+        {nextPayout && !isEligible && (
+          <div className="mt-2 text-xs text-blue-600">
+            Estimated payout date: {formatDate(nextPayout)}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -258,16 +540,16 @@ const calculateMiningProgress = () => {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-2xl font-bold mb-1">{contract.miningServer?.name}</h3>
-            <p className="text-blue-100 opacity-90">Active Mining</p>
+            <p className="text-blue-100 opacity-90">
+              {cardStatus === 'active_with_payout' ? 'Ready for Withdrawal!' : `${getPeriodDisplayName()} Mining Contract`}
+            </p>
           </div>
-          <Badge variant={getPeriodBadgeVariant(contract.period)} className="bg-white text-blue-600 font-semibold">
-            {contract.period.charAt(0).toUpperCase() + contract.period.slice(1)} Returns
-          </Badge>
+          {renderStatusBadge()}
         </div>
         
-        {/* ROI Badge */}
+        {/* Period Badge */}
         <div className="absolute -bottom-4 right-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-full shadow-lg">
-          <span className="font-bold">{roi.toFixed(1)}% ROI</span>
+          <span className="font-bold">{getPeriodDisplayName()}</span>
         </div>
       </div>
 
@@ -279,8 +561,8 @@ const calculateMiningProgress = () => {
             <div className="font-bold text-gray-900 text-lg">{contract.miningServer?.hashRate} EH/s</div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-600 mb-1">Power Usage</div>
-            <div className="font-bold text-gray-900 text-lg">{contract.miningServer?.powerConsumptionInKwH} KwH</div>
+            <div className="text-sm text-gray-600 mb-1">Contract Period</div>
+            <div className="font-bold text-gray-900 text-lg">{getPeriodDisplayName()}</div>
           </div>
         </div>
 
@@ -288,141 +570,69 @@ const calculateMiningProgress = () => {
         {subscription && (
           <div className="mb-6 space-y-6">
             {/* Mining Progress Section */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-bold text-blue-900 text-lg">Mining Progress</h4>
-                <div className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(daysLeft)}`}>
-                  {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="mb-4">
-                <div className="flex justify-between text-sm text-blue-800 mb-2">
-                  <span>Progress</span>
-                  <span className="font-bold">{miningProgress.toFixed(1)}%</span>
-                </div>
-                <div className="w-full bg-blue-200 rounded-full h-3">
-                  <div 
-                    className={`bg-gradient-to-r ${getProgressColor(miningProgress)} h-3 rounded-full transition-all duration-1000 ease-out`}
-                    style={{ width: `${miningProgress}%` }}
-                  ></div>
-                </div>
-              </div>
-
-       
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-white rounded-lg p-2">
-                  <div className="text-xs text-gray-600">Invested</div>
-                  <div className="font-bold text-green-600">${subscription.amountDeposited}</div>
-                </div>
-                <div className="bg-white rounded-lg p-2">
-                  <div className="text-xs text-gray-600">Earned</div>
-                  <div className="font-bold text-blue-600">${subscription.earnings}</div>
-                </div>
-                <div className="bg-white rounded-lg p-2">
-                  <div className="text-xs text-gray-600">Daily</div>
-                  <div className="font-bold text-purple-600">+${((subscription.earnings || 0) / 30)}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Details Toggle */}
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className="w-full flex items-center justify-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              <span className="font-semibold">{showDetails ? 'Hide' : 'Show'} Detailed Information</span>
-              <svg 
-                className={`w-4 h-4 transition-transform ${showDetails ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {/* Expanded Details */}
-            {showDetails && (
-              <div className="space-y-4 animate-fadeIn">
-                {/* Mining Asset */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <h5 className="font-semibold text-gray-900 mb-3">Mining Asset</h5>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">{subscription.symbol?.charAt(0)}</span>
+            {(cardStatus === 'active_mining' || cardStatus === 'active_with_payout' || cardStatus === 'incomplete_deposit') && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-blue-900 text-lg">Mining Progress</h4>
+                  {cardStatus === 'active_mining' && (
+                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(daysUntilAvailable)}`}>
+                      {daysUntilAvailable} {daysUntilAvailable === 1 ? 'day' : 'days'} remaining
                     </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">{subscription.currency}</div>
-                      <Image width={20} height={20} alt='asset logo' src ={subscription.symbol}/>
-                    </div>
+                  )}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm text-blue-800 mb-2">
+                    <span>Mining Progress</span>
+                    <span className="font-bold">{miningProgress.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-3">
+                    <div 
+                      className={`bg-gradient-to-r ${getProgressColor(miningProgress)} h-3 rounded-full transition-all duration-1000 ease-out`}
+                      style={{ width: `${miningProgress}%` }}
+                    ></div>
                   </div>
                 </div>
 
-                {/* Timeline */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <h5 className="font-semibold text-gray-900 mb-3">Timeline</h5>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Start Date</span>
-                      <span className="font-semibold">{subscription.createdAt ? formatDate(new Date(subscription.createdAt)) : 'N/A'}</span>
-                    </div>
-                    {nextPayout && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Next Payout</span>
-                        <span className="font-semibold text-green-600">{formatDate(nextPayout)}</span>
-                      </div>
-                    )}
-                    {withdrawalDate && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Withdrawal Available</span>
-                        <span className="font-semibold text-blue-600">{formatDate(withdrawalDate)}</span>
-                      </div>
-                    )}
+                {/* Quick Stats */}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-white rounded-lg p-2">
+                    <div className="text-xs text-gray-600">Invested</div>
+                    <div className="font-bold text-green-600">${subscription.amountDeposited}</div>
                   </div>
-                </div>
-
-                {/* Performance Metrics */}
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 rounded-xl p-4">
-                  <h5 className="font-semibold text-purple-900 mb-3">Performance Metrics</h5>
-                  <div className="grid grid-cols-2 gap-4">
-                  
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">{contract.periodReturn}%</div>
-                      <div className="text-xs text-purple-700">Return Rate</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{roi.toFixed(1)}%</div>
-                      <div className="text-xs text-green-700">Current ROI</div>
+                  <div className="bg-white rounded-lg p-2">
+                    <div className="text-xs text-gray-600">Earned</div>
+                    <div className="font-bold text-blue-600">${subscription.total}</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2">
+                    <div className="text-xs text-gray-600">Day {daysSinceFirstPayment + 1}</div>
+                    <div className="font-bold text-purple-600">
+                      +${((subscription.total || 0) / Math.max(daysSinceFirstPayment, 1)).toFixed(2)}
                     </div>
                   </div>
                 </div>
               </div>
             )}
+
+            {/* Payout Eligibility Section */}
+            {renderPayoutEligibility()}
+
+            {/* Rest of your component remains the same... */}
           </div>
         )}
 
         {/* Return Rate Highlight */}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 text-center mb-6">
           <div className="text-3xl font-bold text-green-600 mb-2">{contract.periodReturn}%</div>
-          <p className="text-green-700 font-semibold">Period Return Rate</p>
+          <p className="text-green-700 font-semibold">{getPeriodDisplayName()} Return Rate</p>
           <p className="text-sm text-green-600 mt-2">
             Projected return: ${((subscription?.amountDeposited || 0) * (contract.periodReturn / 100)).toFixed(2)}
           </p>
         </div>
 
-        {/* Active Mining Button */}
-        <button
-          onClick={()=>onSubscribe(contract)}
-          className="w-full bg-gradient-to-r from-gray-400 to-gray-500 text-white py-4 px-6 rounded-xl font-semibold cursor-not-allowed shadow-inner flex items-center justify-center space-x-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <span>{subscription?.amountDeposited !== contract.minimumDeposit?'⛏️ Active Mining':'Complete Deposit'}</span>
-        </button>
+        {/* Dynamic Action Button */}
+        {renderActionButton()}
       </div>
     </div>
   );

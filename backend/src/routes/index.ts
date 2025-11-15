@@ -10,12 +10,14 @@ import kycRoutes from './kyc';
 import kycFeeRoutes from './kycFee';
 import emailRoutes from './email';
 import minerRoutes from './miner'
+import earningRoutes from './earnings'
 
 const router = Router();
 
 // API routes
 router.use('/auth', authRoutes);
 router.use('/miners',minerRoutes)
+router.use('/earnings', earningRoutes)
 // router.use('/users', userRoutes);
 router.use('/admin-wallets', adminWalletRoutes);
 router.use('/mining-servers', miningServerRoutes);

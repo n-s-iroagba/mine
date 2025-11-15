@@ -4,6 +4,8 @@ import { AppError, BaseService, CalculationHelper, NotFoundError, ValidationErro
 import { MiningSubscriptionAttributes, MiningSubscriptionCreationAttributes } from '../models/MiningSubscription';
 import { FullSubscriptionDetails } from '../repositories/MiningSubscriptionRepository';
 import Miner from '../models/Miner';
+import { Op } from 'sequelize';
+import { EarningRepository } from '../repositories/EarningRepository';
 
 export interface CreateMiningSubscriptionData {
   miningContractId: number;
@@ -20,6 +22,7 @@ export class MiningSubscriptionService extends BaseService {
   private miningSubscriptionRepository: MiningSubscriptionRepository;
   private miningContractRepository: MiningContractRepository;
   private userRepository: UserRepository;
+  private earningRepository:EarningRepository
   
 
   constructor() {
@@ -27,6 +30,7 @@ export class MiningSubscriptionService extends BaseService {
     this.miningSubscriptionRepository = new MiningSubscriptionRepository();
     this.miningContractRepository = new MiningContractRepository();
     this.userRepository = new UserRepository();
+    this.earningRepository = new EarningRepository()
   }
 
   async createSubscription(subscriptionData: MiningSubscriptionCreationAttributes): Promise<MiningSubscriptionAttributes> {
@@ -57,7 +61,7 @@ export class MiningSubscriptionService extends BaseService {
       const subscription = await this.miningSubscriptionRepository.create({
         ...subscriptionData,
         shouldUpdateAutomatically: subscriptionData.shouldUpdateAutomatically ?? true,
-        earnings: 0,
+        totalEarnings: 0,
         amountDeposited:0,
         currency:subscriptionData.currency
 
@@ -113,10 +117,10 @@ export class MiningSubscriptionService extends BaseService {
     }
   }
 
-  async updateEarnings(id: number, earningsData: UpdateEarningsData): Promise<MiningSubscriptionAttributes> {
+  async updateEarnings(id: number, earningsData:any): Promise<MiningSubscriptionAttributes> {
     try {
       this.logInfo('Updating subscription earnings', { subscriptionId: id, earnings: earningsData.earnings });
-
+     
       const subscription = await this.miningSubscriptionRepository.findById(id);
       if (!subscription) {
         throw new NotFoundError('Mining subscription');
@@ -127,6 +131,7 @@ export class MiningSubscriptionService extends BaseService {
       }
 
       const updatedSubscription= await this.miningSubscriptionRepository.updateEarnings(id, earningsData.earnings);
+      this.earningRepository.create({amount:earningsData.earnings,miningSubscriptionId:earningsData,date:new Date()})
       
       if (!updatedSubscription) {
         throw new AppError('Failed to update subscription earnings');
@@ -173,7 +178,7 @@ export class MiningSubscriptionService extends BaseService {
       this.logInfo('Processing daily earnings for all active subscriptions');
 
       const activeSubscriptions = await this.miningSubscriptionRepository.findAll({
-        where: { isActive: true, shouldUpdateAutomatically: true },
+        where: { amountDeposited:{ [Op.gt]:0}, shouldUpdateAutomatically: true },
         include: ['miningContract'],
       }) as FullSubscriptionDetails[];
 
@@ -190,8 +195,13 @@ export class MiningSubscriptionService extends BaseService {
             miningContract.period,
             1
           );
+          await this.earningRepository.create({
+            amount:dailyEarnings,
+            miningSubscriptionId:subscription.id,
+            date:new Date()
 
-          const newEarnings = subscription.earnings + dailyEarnings;
+          })
+          const newEarnings = subscription.totalEarnings + dailyEarnings;
 
           await this.miningSubscriptionRepository.updateEarnings(subscription.id, newEarnings);
           processedCount++;
@@ -218,14 +228,14 @@ export class MiningSubscriptionService extends BaseService {
       const netProfit = CalculationHelper.calculateNetProfit(totalEarnings, totalDeposits);
       const overallROI = CalculationHelper.calculateROI(totalEarnings, totalDeposits);
 
-      const activeSubscriptions = subscriptions.filter(sub => sub.isActive);
-      const inactiveSubscriptions = subscriptions.filter(sub => !sub.isActive);
+      const activeSubscriptions = subscriptions.length
+      const inactiveSubscriptions =0
 
       return {
         summary: {
           totalSubscriptions: subscriptions.length,
-          activeSubscriptions: activeSubscriptions.length,
-          inactiveSubscriptions: inactiveSubscriptions.length,
+          activeSubscriptions: activeSubscriptions,
+          inactiveSubscriptions: inactiveSubscriptions,
           totalDeposits,
           totalEarnings,
           netProfit,
@@ -234,8 +244,8 @@ export class MiningSubscriptionService extends BaseService {
         subscriptions: subscriptions.map(sub => ({
           id: sub.id,
           amountDeposited: sub.amountDeposited,
-          earnings: sub.earnings,
-          isActive: sub.isActive,
+          earnings: sub.totalEarnings,
+     
           createdAt: sub.createdAt,
           miningContract: sub.miningContract,
         })),
@@ -249,12 +259,12 @@ export class MiningSubscriptionService extends BaseService {
     try {
       this.logInfo('Deactivating mining subscription', { subscriptionId: id });
 
-      const subscription = await this.miningSubscriptionRepository.findById(id);
+      const subscription = await this.miningSubscriptionRepository.deleteById(id);
       if (!subscription) {
         throw new NotFoundError('Mining subscription');
       }
 
-      await this.miningSubscriptionRepository.update(id, { isActive: false });
+
 
       this.logInfo('Mining subscription deactivated successfully', { subscriptionId: id });
     } catch (error) {

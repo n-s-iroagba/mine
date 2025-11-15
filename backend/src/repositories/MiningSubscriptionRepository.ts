@@ -111,8 +111,12 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
   }
 
   async updateEarnings(id: number, earnings: number): Promise<MiningSubscription|null> {
+    
     try {
-      return await this.update(id, { earnings });
+      const subscription = await this.findById(id)
+     subscription.totalEarnings += earnings
+     await subscription.save()
+     return subscription
     } catch (error) {
       throw new Error(`Error updating earnings for subscription ${id}: ${error}`);
     }

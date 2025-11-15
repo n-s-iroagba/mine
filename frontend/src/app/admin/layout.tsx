@@ -41,12 +41,16 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
     { name: 'Admin Wallets', href: '/admin/wallets', icon: '👛' },
+      { name: 'Banks', href: '/admin/banks', icon: '🏦' },
     { name: 'Mining Servers', href: '/admin/servers', icon: '🖥️' },
-    {name:'Kyc Fees', href:'/admin/kyc-fees', icon: '📊'},
+  
     { name: 'Mining Contracts', href: '/admin/contracts', icon: '📑' },
-    { name: 'Banks', href: '/admin/banks', icon: '🏦' },
+     { name: 'Transactions', href: '/admin/transactions', icon: '💳' },
+
     { name: 'Subscriptions', href: '/admin/subscriptions', icon: '📋' },
-    { name: 'Transactions', href: '/admin/transactions', icon: '💳' },
+      {name:'Kyc Fees', href:'/admin/kyc-fees', icon: '📊'},
+  
+   
     { name: 'KYC', href: '/admin/kyc', icon: '✅' },
     {name:'Mail',href: '/admin/email', icon: '📋'},
         { name: 'Withdrawal Request', href: '/admin/withdrawal-requests', icon: '📑' },

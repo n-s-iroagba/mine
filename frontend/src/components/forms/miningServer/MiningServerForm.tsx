@@ -15,7 +15,7 @@ interface MiningServerFormData {
   name: string;
   hashRate: string;
   powerConsumptionInKwH: string;
-  isActive: boolean;
+ 
 }
 
 interface MiningServerFormProps {
@@ -34,7 +34,7 @@ export function MiningServerForm({ server, isEdit = false }: MiningServerFormPro
     name: '',
     hashRate: '',
     powerConsumptionInKwH: '',
-    isActive: true,
+ 
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -45,7 +45,7 @@ export function MiningServerForm({ server, isEdit = false }: MiningServerFormPro
         name: server.name,
         hashRate: server.hashRate,
         powerConsumptionInKwH: server.powerConsumptionInKwH,
-        isActive: server.isActive,
+        
       });
     }
   }, [server]);
@@ -177,14 +177,7 @@ export function MiningServerForm({ server, isEdit = false }: MiningServerFormPro
               )}
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked: boolean) => handleInputChange('isActive', checked)}
-              />
-              <Label htmlFor="isActive">Active Server</Label>
-            </div>
+         
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button

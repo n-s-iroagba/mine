@@ -8,6 +8,7 @@ import Transaction from './Transaction';
 import KYC from './KYC';
 import KYCFee from './KYCFee';
 import Miner from './Miner';
+import Earning from './Earning';
 
 // MiningContract - MiningServer relationship
 MiningContract.belongsTo(MiningServer, {
@@ -104,6 +105,19 @@ KYCFee.belongsTo(User, {
 User.hasOne(KYCFee, {
   foreignKey: 'minerId',
   as: 'kycFee',
+});
+
+
+
+// Define relationships
+MiningSubscription.hasMany(Earning, {
+  foreignKey: 'miningSubscriptionId',
+  as: 'earnings', // alias for eager loading
+});
+
+Earning.belongsTo(MiningSubscription, {
+  foreignKey: 'miningSubscriptionId',
+  as: 'miningSubscription', // alias for eager loading
 });
 
 export {

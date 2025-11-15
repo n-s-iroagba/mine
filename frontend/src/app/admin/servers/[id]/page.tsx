@@ -87,12 +87,7 @@ export default function MiningServerDetailsPage() {
               <span className="font-medium">Power Consumption:</span>
               <span className="text-gray-600">{server.powerConsumptionInKwH}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Status:</span>
-              <Badge variant={server.isActive ? 'secondary' : 'default'}>
-                {server.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
+        
           </CardContent>
         </Card>
 

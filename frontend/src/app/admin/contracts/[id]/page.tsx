@@ -99,12 +99,7 @@ export default function MiningContractDetailsPage() {
                 {contract.period.charAt(0).toUpperCase() + contract.period.slice(1)}
               </Badge>
             </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Status:</span>
-              <Badge variant={contract.isActive ? 'secondary' : 'default'}>
-                {contract.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
+       
           </CardContent>
         </Card>
 

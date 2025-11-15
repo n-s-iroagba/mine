@@ -8,12 +8,11 @@ export interface BankAttributes {
   accountName: string;
   branch?: string;
   swiftCode?: string;
-  isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface BankCreationAttributes extends Optional<BankAttributes, 'id' | 'isActive' | 'createdAt' | 'updatedAt'> {}
+export interface BankCreationAttributes extends Optional<BankAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
 
 class Bank extends Model<BankAttributes, BankCreationAttributes> implements BankAttributes {
   public id!: number;
@@ -22,7 +21,7 @@ class Bank extends Model<BankAttributes, BankCreationAttributes> implements Bank
   public accountName!: string;
   public branch?: string;
   public swiftCode?: string;
-  public isActive!: boolean;
+
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -55,11 +54,7 @@ Bank.init(
       type: DataTypes.STRING(20),
       allowNull: true,
     },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
+
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,

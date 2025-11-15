@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { TransactionController } from '../controllers';
-import {  requireAdmin } from '../middlewares/auth';
+import {  authenticate, requireAdmin } from '../middlewares/auth';
 
 const router = Router();
 const transactionController = new TransactionController();
 
 // Public routes (with restrictions)
-router.get('/miner/:minerId',  transactionController.getTransactionsByMinerId);
+router.get('/miner/:minerId', authenticate, transactionController.getTransactionsByMinerId);
 router.get('/:id', transactionController.getTransactionById);
 
 // Admin only routes

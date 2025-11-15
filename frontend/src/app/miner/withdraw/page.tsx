@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { useApiQuery } from '../../../hooks/useApi';
 import { formatCurrency } from '../../../lib/utils';
-import { miningSubscriptionService, kycService, kycFeeService, bankService, adminWalletService } from '../../../services';
+import { miningSubscriptionService, kycService, kycFeeService, bankService, adminWalletService, miningContractService } from '../../../services';
 import { MiningSubscription } from '@/types/subscription';
+import { MiningContract } from '@/types/api';
 
 
 const uploadFile = async (
@@ -18,7 +19,6 @@ const uploadFile = async (
     formData.append('upload_preset', 'amafor');
     formData.append('folder', 'amafor');
 
-    // Add additional optimization parameters
     if (type === 'image') {
       formData.append('quality', 'auto');
       formData.append('fetch_format', 'auto');
@@ -50,18 +50,119 @@ const uploadFile = async (
 };
 
 const validateFile = (file: File, maxSizeMB: number = 10, allowedTypes: string[] = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']): string | null => {
-  // Check file type
   if (!allowedTypes.includes(file.type)) {
     return `File type not supported. Please upload ${allowedTypes.join(', ')}`;
   }
 
-  // Check file size (convert MB to bytes)
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   if (file.size > maxSizeBytes) {
     return `File size too large. Maximum size is ${maxSizeMB}MB`;
   }
 
   return null;
+};
+
+// Utility functions for withdrawal calculation
+const calculateWithdrawalDueDate = (
+  subscription: MiningSubscription,
+  contract: MiningContract
+): Date | null => {
+  if (!subscription.dateOfFirstPayment || subscription.depositStatus !== 'complete deposit') {
+    return null;
+  }
+
+  const firstPaymentDate = new Date(subscription.dateOfFirstPayment);
+  const now = new Date();
+  
+  let daysToAdd = 0;
+  switch (contract.period) {
+    case 'daily':
+      daysToAdd = 1;
+      break;
+    case 'weekly':
+      daysToAdd = 7;
+      break;
+    case 'fortnightly':
+      daysToAdd = 14;
+      break;
+    case 'monthly':
+      daysToAdd = 30;
+      break;
+    default:
+      return null;
+  }
+
+  let nextDueDate = new Date(firstPaymentDate);
+  
+  while (nextDueDate <= now) {
+    nextDueDate.setDate(nextDueDate.getDate() + daysToAdd);
+  }
+
+  return nextDueDate;
+};
+
+const isWithdrawalDueToday = (
+  subscription: MiningSubscription,
+  contract: MiningContract
+): boolean => {
+  const dueDate = calculateWithdrawalDueDate(subscription, contract);
+  if (!dueDate) return false;
+
+  const today = new Date();
+  return (
+    dueDate.getDate() === today.getDate() &&
+    dueDate.getMonth() === today.getMonth() &&
+    dueDate.getFullYear() === today.getFullYear()
+  );
+};
+
+const isWithdrawalOverdue = (
+  subscription: MiningSubscription,
+  contract: MiningContract
+): boolean => {
+  const dueDate = calculateWithdrawalDueDate(subscription, contract);
+  if (!dueDate) return false;
+
+  const now = new Date();
+  return dueDate < now;
+};
+
+const getDaysUntilNextWithdrawal = (
+  subscription: MiningSubscription,
+  contract: MiningContract
+): number => {
+  const dueDate = calculateWithdrawalDueDate(subscription, contract);
+  if (!dueDate) return -1;
+
+  const now = new Date();
+  const diffTime = dueDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return Math.max(0, diffDays);
+};
+
+const canProceedWithKYC = (
+  subscriptions: MiningSubscription[],
+  contracts: MiningContract[]
+): boolean => {
+  const hasActiveSubscription = subscriptions.some(sub => 
+    sub.depositStatus === 'complete deposit'
+  );
+
+  if (!hasActiveSubscription) return false;
+
+  for (const subscription of subscriptions) {
+    if (subscription.depositStatus !== 'complete deposit') continue;
+    
+    const contract = contracts.find(c => c.id === subscription.miningContractId);
+    if (!contract) continue;
+
+    if (isWithdrawalDueToday(subscription, contract) || isWithdrawalOverdue(subscription, contract)) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 export default function KYCPage() {
@@ -77,12 +178,17 @@ export default function KYCPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-
-
   // Fetch subscriptions
   const { data: subscriptions, isLoading: subscriptionsLoading } = useApiQuery<MiningSubscription[]>(
     ['miner-subscriptions', minerId],
     () => miningSubscriptionService.getSubscriptionsByMinerId(minerId!),
+    { enabled: !!minerId }
+  );
+
+  // Fetch contracts
+  const { data: contracts, isLoading: contractsLoading } = useApiQuery<MiningContract[]>(
+    ['mining-contracts'],
+    () => miningContractService.getAllContracts(),
     { enabled: !!minerId }
   );
 
@@ -113,13 +219,44 @@ export default function KYCPage() {
     { enabled: activeStep === 'payment' && paymentMethod === 'crypto' }
   );
 
+  // Calculate withdrawal status
+  const withdrawalStatus = React.useMemo(() => {
+    if (!subscriptions || !contracts) return null;
+
+    for (const subscription of subscriptions) {
+      if (subscription.depositStatus !== 'complete deposit') continue;
+      
+      const contract = contracts.find(c => c.id === subscription.miningContractId);
+      if (!contract) continue;
+
+      const dueDate = calculateWithdrawalDueDate(subscription, contract);
+      const daysUntilDue = getDaysUntilNextWithdrawal(subscription, contract);
+      const isDueToday = isWithdrawalDueToday(subscription, contract);
+      const isOverdue = isWithdrawalOverdue(subscription, contract);
+
+      return {
+        dueDate,
+        daysUntilDue,
+        isDueToday,
+        isOverdue,
+        subscription,
+        contract
+      };
+    }
+    return null;
+  }, [subscriptions, contracts]);
+
+  // Determine if user can proceed with KYC
+  const canProceed = React.useMemo(() => {
+    if (!subscriptions || !contracts) return false;
+    return canProceedWithKYC(subscriptions, contracts);
+  }, [subscriptions, contracts]);
+
   // Determine current step based on data
   React.useEffect(() => {
-    if ( subscriptionsLoading || kycLoading || kycFeeLoading) return;
+    if (subscriptionsLoading || kycLoading || kycFeeLoading || contractsLoading) return;
 
-    const hasSubscription = subscriptions && subscriptions.length > 0;
-    
-    if (!hasSubscription) {
+    if (!canProceed) {
       setActiveStep('check');
       return;
     }
@@ -148,7 +285,7 @@ export default function KYCPage() {
       setActiveStep('complete');
       return;
     }
-  }, [subscriptions, kyc, kycFee,  subscriptionsLoading, kycLoading, kycFeeLoading]);
+  }, [subscriptions, kyc, kycFee, contracts, canProceed, subscriptionsLoading, kycLoading, kycFeeLoading, contractsLoading]);
 
   const handleFileSelect = (file: File, setFile: React.Dispatch<React.SetStateAction<File | null>>) => {
     const validationError = validateFile(file);
@@ -172,16 +309,13 @@ export default function KYCPage() {
     setError('');
     
     try {
-      // Upload ID card to Cloudinary first
       const idCardUrl = await uploadFile(idCardFile, 'image');
       
-      // Then send to KYC service
       await kycService.createKYCRequest({
         minerId: minerId as number,
         idCard: idCardUrl
       });
       
-      // KYC submission successful, move to next step
       setActiveStep('fee');
     } catch (err) {
       setError('Failed to upload ID card. Please try again.');
@@ -217,10 +351,8 @@ export default function KYCPage() {
     setError('');
 
     try {
-      // Upload payment proof to Cloudinary first
       const paymentProofUrl = await uploadFile(paymentProof, 'image');
       
-      // Then send to KYC fee service
       await kycFeeService.submitPaymentProof(
         minerId!,
         paymentMethod as "bank" | "crypto",
@@ -236,7 +368,13 @@ export default function KYCPage() {
     }
   };
 
-  if (subscriptionsLoading || kycLoading || kycFeeLoading) {
+  const startKYCProcess = () => {
+    if (canProceed) {
+      setActiveStep('kyc');
+    }
+  };
+
+  if (subscriptionsLoading || kycLoading || kycFeeLoading || contractsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -255,6 +393,36 @@ export default function KYCPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">KYC Verification</h1>
           <p className="text-gray-600">Complete your Know Your Customer verification process</p>
         </div>
+
+        {/* Withdrawal Status Banner */}
+        {withdrawalStatus && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            withdrawalStatus.isDueToday 
+              ? 'bg-yellow-50 border border-yellow-200 text-yellow-800'
+              : withdrawalStatus.isOverdue
+              ? 'bg-red-50 border border-red-200 text-red-800'
+              : 'bg-blue-50 border border-blue-200 text-blue-800'
+          }`}>
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-medium">
+                  {withdrawalStatus.isDueToday 
+                    ? "Withdrawal is due today!"
+                    : withdrawalStatus.isOverdue
+                    ? "Withdrawal is overdue!"
+                    : `Next withdrawal in ${withdrawalStatus.daysUntilDue} days`
+                  }
+                </p>
+                <p className="text-sm">
+                  Complete KYC verification to enable withdrawals.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Progress Steps */}
         <div className="flex justify-center mb-8">
@@ -290,6 +458,9 @@ export default function KYCPage() {
           {activeStep === 'check' && (
             <CheckSubscriptionStep 
               hasSubscription={(subscriptions && subscriptions.length > 0) as boolean}
+              withdrawalStatus={withdrawalStatus}
+              onStartKYC={startKYCProcess}
+              canProceedWithKYC={canProceed}
             />
           )}
 
@@ -355,19 +526,47 @@ function getStepStatus(step: string, activeStep: string) {
 }
 
 // Step Components
-function CheckSubscriptionStep({ hasSubscription }: { hasSubscription: boolean }) {
+function CheckSubscriptionStep({ 
+  hasSubscription, 
+  withdrawalStatus, 
+  onStartKYC, 
+  canProceedWithKYC 
+}: { 
+  hasSubscription: boolean;
+  withdrawalStatus: any;
+  onStartKYC: () => void;
+  canProceedWithKYC: boolean;
+}) {
   return (
     <div className="text-center py-8">
-      {hasSubscription ? (
+      {canProceedWithKYC ? (
         <>
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Subscription Found</h2>
-          <p className="text-gray-600 mb-6">You have an active mining subscription. KYC verification is required.</p>
-          <p className="text-sm text-gray-500">You will be redirected to the KYC process automatically...</p>
+          
+          {hasSubscription && (
+            <>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Ready for KYC</h2>
+              <p className="text-gray-600 mb-6">
+                {withdrawalStatus?.isDueToday 
+                  ? "Your withdrawal is due today. Complete KYC to access your funds."
+                  : withdrawalStatus?.isOverdue
+                  ? "Your withdrawal is overdue. Complete KYC to withdraw your earnings."
+                  : `Your next withdrawal is in ${withdrawalStatus?.daysUntilDue} days. Complete KYC to enable withdrawals.`
+                }
+              </p>
+            </>
+          )}
+          
+          <button 
+            onClick={onStartKYC}
+            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            Start KYC Verification
+          </button>
         </>
       ) : (
         <>
@@ -376,8 +575,10 @@ function CheckSubscriptionStep({ hasSubscription }: { hasSubscription: boolean }
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Subscription Found</h2>
-          <p className="text-gray-600 mb-6">You need an active mining subscription to proceed with KYC verification.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Requirements Not Met</h2>
+          <p className="text-gray-600 mb-6">
+            You need an active mining subscription with a withdrawal due date to proceed with KYC verification.
+          </p>
           <div className="space-y-3">
             <button className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors">
               Create Mining Subscription

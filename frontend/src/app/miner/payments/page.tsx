@@ -3,15 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-
-import { DataTable } from '../../../components/ui/table';
 import { transactionService } from '../../../services/transactionService';
 import { adminWalletService } from '../../../services/adminWalletService';
-
 import { formatCurrency, formatDate, truncateAddress } from '../../../lib/utils';
 import { Transaction, AdminWallet } from '../../../types/api';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
+import { 
+  CheckCircleIcon, 
+  ClockIcon, 
+  XCircleIcon, 
+  DocumentTextIcon,
+  CurrencyDollarIcon
+} from '@heroicons/react/24/outline';
 
 export default function PaymentsPage() {
   const { user } = useAuth();
@@ -43,69 +47,59 @@ export default function PaymentsPage() {
     }
   };
 
-  const columns = [
-    {
-      key: 'amountInUSD',
-      label: 'Amount',
-      render: (value: number) => (
-        <span className="font-medium">
-          {formatCurrency(value)}
-        </span>
-      ),
-    },
-    {
-      key: 'entity',
-      label: 'Type',
-      render: (value: string) => (
-        <Badge variant={value === 'subscription' ? 'secondary': 'default'}>
-          {value === 'subscription' ? 'Subscription' : 'KYC Fee'}
-        </Badge>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (value: string) => {
-        const variants = {
-          initialized: 'default',
-          pending: 'warning',
-          successful: 'secondary',
-          failed: 'error',
-        } as const;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'successful':
+        return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
+      case 'pending':
+        return <ClockIcon className="w-5 h-5 text-yellow-500" />;
+      case 'failed':
+        return <XCircleIcon className="w-5 h-5 text-red-500" />;
+      default:
+        return <ClockIcon className="w-5 h-5 text-gray-500" />;
+    }
+  };
 
-        const labels = {
-          initialized: 'Initialized',
-          pending: 'Pending',
-          successful: 'Successful',
-          failed: 'Failed',
-        };
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'successful':
+        return 'bg-green-50 text-green-700 border-green-200';
+      case 'pending':
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case 'failed':
+        return 'bg-red-50 text-red-700 border-red-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
 
-        return (
-          <Badge variant={variants[value as keyof typeof variants]}>
-            {labels[value as keyof typeof labels]}
-          </Badge>
-        );
-      },
-    },
-    {
-      key: 'createdAt',
-      label: 'Date',
-      render: (value: string) => formatDate(value),
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+          <p className="mt-1 text-sm text-gray-600">Transaction History</p>
+        </div>
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Manage your payments and transaction history
+          Transaction History
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Payment Methods */}
+        {/* Payment Methods & Transactions */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Payment Methods */}
           <Card>
             <CardHeader>
               <CardTitle>Payment Methods</CardTitle>
@@ -118,7 +112,7 @@ export default function PaymentsPage() {
                 {wallets.map((wallet) => (
                   <div
                     key={wallet.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -150,13 +144,69 @@ export default function PaymentsPage() {
                 Your payment and transaction records
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-0">
-              <DataTable
-                columns={columns}
-                data={transactions}
-                loading={loading}
-                emptyMessage="No transactions found. Your transaction history will appear here."
-              />
+            <CardContent>
+              {transactions.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <CurrencyDollarIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                  <p>No transactions found.</p>
+                  <p className="text-sm">Your transaction history will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                          <CurrencyDollarIcon className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="font-medium text-gray-900">
+                              {formatCurrency(transaction.amountInUSD)}
+                            </span>
+                            <Badge variant={transaction.entity === 'subscription' ? 'secondary' : 'default'}>
+                              {transaction.entity === 'subscription' ? 'Subscription' : 'KYC Fee'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>ID: #{transaction.id}</span>
+                            <span>•</span>
+                            <span className="capitalize">{transaction.paymentMethod?.replace('_', ' ') || 'N/A'}</span>
+                            <span>•</span>
+                            <span>{formatDate(transaction.createdAt?.toString())}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <div className={`flex items-center space-x-1 px-3 py-1 rounded-full border ${getStatusColor(transaction.status)}`}>
+                          {getStatusIcon(transaction.status)}
+                          <span className="text-sm font-medium">
+                            {transaction.status === 'successful' ? 'Successful' : 
+                             transaction.status === 'pending' ? 'Pending' : 
+                             transaction.status === 'failed' ? 'Failed' : 'Initialized'}
+                          </span>
+                        </div>
+{/*                         
+                        {transaction.receipt && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => window.open(transaction.r, '_blank')}
+                            className="flex items-center space-x-1"
+                          >
+                            <DocumentTextIcon className="w-4 h-4" />
+                            <span>Receipt</span>
+                          </Button>
+                        )} */}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

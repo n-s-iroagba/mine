@@ -5,7 +5,7 @@ import { adminWalletService, API_ROUTES, apiService, bankService, miningSubscrip
 import { useApiQuery } from '@/hooks/useApi';
 import { Coin, useCoins } from '@/hooks/useCoins';
 import Image from 'next/image';
-import { MiningSubscription } from '@/types/subscription';
+import { DepositStatus, MiningSubscription } from '@/types/subscription';
 
 export const uploadFile = async (
   file: File,
@@ -58,14 +58,17 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
   const { data: banks, isLoading: banksLoading } = useApiQuery(
     ['banks'],
     () => bankService.getAllBanks(),
-    { enabled: step === 'details' && paymentMethod === 'bank' }
+
   );
 
   const { data: wallets, isLoading: walletsLoading } = useApiQuery(
     ['wallets'],
     () => adminWalletService.getActiveWallets(),
-    { enabled: step === 'details' && paymentMethod === 'crypto' }
   );
+
+  // Check if there are available payment methods
+  const hasBanks = banks && banks.length > 0;
+  const hasWallets = wallets && wallets.length > 0;
 
   // Initialize with existing subscription data
   useEffect(() => {
@@ -73,18 +76,20 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
       setSubscriptionCreated(true);
       setCreatedSubscriptionId(subscription.id);
       
- 
-        const existingCoin = coins?.find((coin: Coin) =>
-          coin.symbol.toLowerCase() === subscription.symbol?.toLowerCase()
-        );
-        if (existingCoin) {
-          setSelectedCoin(existingCoin);
-        }
-           setStep('method')
+      const existingCoin = coins?.find((coin: Coin) =>
+        coin.symbol.toLowerCase() === subscription.symbol?.toLowerCase()
+      );
+      if (existingCoin) {
+        setSelectedCoin(existingCoin);
       }
- 
- 
-    
+      
+      // For existing subscriptions with pending payment, go directly to payment proof
+      if (subscription.depositStatus === DepositStatus.PENDING && subscription.amountDeposited === 0) {
+        setStep('proof');
+      } else {
+        setStep('method');
+      }
+    }
   }, [isExistingSubscription, subscription, coins]);
 
   // Reset state when modal closes
@@ -122,6 +127,17 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
   };
 
   const handlePaymentMethodSelect = (method: 'crypto' | 'bank') => {
+    // Check if payment method is available
+    if (method === 'bank' && !hasBanks) {
+      setError('Bank transfer is currently unavailable. Please try cryptocurrency payment.');
+      return;
+    }
+    
+    if (method === 'crypto' && !hasWallets) {
+      setError('Cryptocurrency payment is currently unavailable. Please try bank transfer.');
+      return;
+    }
+
     setPaymentMethod(method);
     setStep('details');
     setError('');
@@ -144,30 +160,30 @@ export function PaymentModal({ subscription, contract, minerId, isOpen, onClose,
       setStep('details');
     }
   };
-const createSubscription = async () => {
-  if (!selectedCoin) {
-    setError('Please select a coin first');
-    return null;
-  }
 
-  try {
-    const response = await apiService.post(API_ROUTES.subscriptions.create(minerId), {
-      miningContractId: contract.id,
-      currency: selectedCoin.name,
-      symbol: selectedCoin.image,
-      Id: minerId,
-    });
+  const createSubscription = async () => {
+    if (!selectedCoin) {
+      setError('Please select a coin first');
+      return null;
+    }
 
-    const newSubscription = response.data; // ✅ extract the data
-    setSubscriptionCreated(true);
-    setCreatedSubscriptionId(newSubscription.id); // ✅ now this will not be undefined
-    return newSubscription.id;
-  } catch (err) {
-    setError('Failed to create subscription. Please try again.');
-    return null;
-  }
-};
+    try {
+      const response = await apiService.post(API_ROUTES.subscriptions.create(minerId), {
+        miningContractId: contract.id,
+        currency: selectedCoin.name,
+        symbol: selectedCoin.image,
+        Id: minerId,
+      });
 
+      const newSubscription = response.data;
+      setSubscriptionCreated(true);
+      setCreatedSubscriptionId(newSubscription.id);
+      return newSubscription.id;
+    } catch (err) {
+      setError('Failed to create subscription. Please try again.');
+      return null;
+    }
+  };
 
   const handlePaymentSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,12 +197,16 @@ const createSubscription = async () => {
       return;
     }
 
+    if (parseFloat(amountInUSD) < contract.minimumDeposit) {
+      setError(`Minimum deposit is $${contract.minimumDeposit}`);
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
 
     try {
-  
-//      Upload payment proof to Cloudinary first
+      // Upload payment proof to Cloudinary first
       const paymentProofUrl = await uploadFile(paymentProof, 'image');
 
       const subscriptionIdToUse = subscription?.id || createdSubscriptionId;
@@ -195,7 +215,7 @@ const createSubscription = async () => {
         setError('No subscription found. Please try again.');
         return;
       }
- 
+
       // Create transaction with payment details
       await transactionService.createTransaction({
         paymentMethod: paymentMethod as 'bank' | 'crypto',
@@ -241,7 +261,7 @@ const createSubscription = async () => {
 
     setIsSubmitting(true);
     try {
-      // await miningSubscriptionService.cancelSubscription(subscriptionIdToCancel);
+      await miningSubscriptionService.deleteSubscription(subscriptionIdToCancel);
       onClose();
       onSuccess(); // Refresh the parent component
     } catch (err) {
@@ -367,6 +387,9 @@ const createSubscription = async () => {
               onMethodSelect={handlePaymentMethodSelect}
               onBack={handleBack}
               isExistingSubscription={isExistingSubscription}
+              hasBanks={hasBanks}
+              hasWallets={hasWallets}
+              error={error}
             />
           )}
 
@@ -387,6 +410,8 @@ const createSubscription = async () => {
               selectedBankDetails={selectedBankDetails}
               selectedWalletDetails={selectedWalletDetails}
               isExistingSubscription={isExistingSubscription}
+              hasBanks={hasBanks}
+              hasWallets={hasWallets}
             />
           )}
 
@@ -535,7 +560,7 @@ function CoinSelectionStep({
   );
 }
 
-function PaymentMethodStep({ onMethodSelect, onBack, isExistingSubscription }: any) {
+function PaymentMethodStep({ onMethodSelect, onBack, isExistingSubscription, hasBanks, hasWallets, error }: any) {
   return (
     <div>
       <div className="flex items-center mb-4">
@@ -551,41 +576,75 @@ function PaymentMethodStep({ onMethodSelect, onBack, isExistingSubscription }: a
         <h3 className="text-lg font-semibold text-gray-900">Select Payment Method</h3>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p className="text-red-800 text-sm">{error}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <button
           onClick={() => onMethodSelect('bank')}
-          className="p-6 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+          disabled={!hasBanks}
+          className={`p-6 border-2 rounded-lg text-left transition-colors ${
+            hasBanks 
+              ? 'border-gray-300 hover:border-blue-500 hover:bg-blue-50' 
+              : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+          }`}
         >
           <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center mr-4 ${
+              hasBanks ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-400'
+            }`}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
             <div>
               <p className="font-semibold text-gray-900">Bank Transfer</p>
-              <p className="text-sm text-gray-600">Transfer to our bank account</p>
+              <p className="text-sm text-gray-600">
+                {hasBanks ? 'Transfer to our bank account' : 'Currently unavailable'}
+              </p>
             </div>
           </div>
         </button>
 
         <button
           onClick={() => onMethodSelect('crypto')}
-          className="p-6 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+          disabled={!hasWallets}
+          className={`p-6 border-2 rounded-lg text-left transition-colors ${
+            hasWallets 
+              ? 'border-gray-300 hover:border-blue-500 hover:bg-blue-50' 
+              : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+          }`}
         >
           <div className="flex items-center">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center mr-4 ${
+              hasWallets ? 'bg-purple-100 text-purple-600' : 'bg-gray-200 text-gray-400'
+            }`}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v1m0 6v1m0-1v1m6-10h-1M4 12H3m17.5-6.5L18 7m-12 5l-1.5 1.5M18 7l-1.5-1.5M18 7l1.5-1.5M6 17l-1.5 1.5" />
               </svg>
             </div>
             <div>
               <p className="font-semibold text-gray-900">Cryptocurrency</p>
-              <p className="text-sm text-gray-600">Pay with crypto wallet</p>
+              <p className="text-sm text-gray-600">
+                {hasWallets ? 'Pay with crypto wallet' : 'Currently unavailable'}
+              </p>
             </div>
           </div>
         </button>
       </div>
+
+      {(!hasBanks || !hasWallets) && (
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800">
+            {!hasBanks && !hasWallets 
+              ? 'Both payment methods are currently unavailable. Please try again later.' 
+              : 'One payment method is currently unavailable. Please use the available option.'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -605,7 +664,9 @@ function PaymentDetailsStep({
   copied,
   selectedBankDetails,
   selectedWalletDetails,
-  isExistingSubscription
+  isExistingSubscription,
+  hasBanks,
+  hasWallets
 }: any) {
   const canCopy = paymentMethod === 'bank' ? selectedBank : selectedCrypto;
 
@@ -628,7 +689,15 @@ function PaymentDetailsStep({
 
       {paymentMethod === 'bank' && (
         <div className="space-y-4">
-          {banksLoading ? (
+          {!hasBanks ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <p className="text-gray-600">Bank transfer is currently unavailable</p>
+              <p className="text-sm text-gray-500 mt-1">Please try cryptocurrency payment</p>
+            </div>
+          ) : banksLoading ? (
             <div className="text-center py-8">
               <p className="text-gray-500">Loading banks...</p>
             </div>
@@ -649,7 +718,19 @@ function PaymentDetailsStep({
 
               {selectedBankDetails && (
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-semibold mb-3">Bank Transfer Details</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold">Bank Transfer Details</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onCopy(selectedBankDetails.accountNumber);
+                      }}
+                      disabled={!canCopy}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {copied ? 'Copied!' : 'Copy & Continue'}
+                    </button>
+                  </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Bank Name:</span>
@@ -668,10 +749,9 @@ function PaymentDetailsStep({
                         <button
                           type="button"
                           onClick={() => onCopy(selectedBankDetails.accountNumber)}
-                          disabled={!canCopy}
-                          className="text-blue-600 hover:text-blue-700 text-xs disabled:text-gray-400 disabled:cursor-not-allowed"
+                          className="text-blue-600 hover:text-blue-700 text-xs"
                         >
-                          {copied ? 'Copied!' : 'Copy'}
+                          Copy
                         </button>
                       </div>
                     </div>
@@ -682,6 +762,11 @@ function PaymentDetailsStep({
                       </div>
                     )}
                   </div>
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-800">
+                      💡 <strong>Important:</strong> Click "Copy & Continue" to copy the account number and create your subscription. Then make the payment and upload proof.
+                    </p>
+                  </div>
                 </div>
               )}
             </>
@@ -691,7 +776,15 @@ function PaymentDetailsStep({
 
       {paymentMethod === 'crypto' && (
         <div className="space-y-4">
-          {walletsLoading ? (
+          {!hasWallets ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <p className="text-gray-600">Cryptocurrency payment is currently unavailable</p>
+              <p className="text-sm text-gray-500 mt-1">Please try bank transfer</p>
+            </div>
+          ) : walletsLoading ? (
             <div className="text-center py-8">
               <p className="text-gray-500">Loading wallets...</p>
             </div>
@@ -712,7 +805,19 @@ function PaymentDetailsStep({
 
               {selectedWalletDetails && (
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-semibold mb-3">Wallet Address</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold">Wallet Address</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onCopy(selectedWalletDetails.address);
+                      }}
+                      disabled={!canCopy}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {copied ? 'Copied!' : 'Copy & Continue'}
+                    </button>
+                  </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Currency:</span>
@@ -729,13 +834,17 @@ function PaymentDetailsStep({
                         <button
                           type="button"
                           onClick={() => onCopy(selectedWalletDetails.address)}
-                          disabled={!canCopy}
-                          className="text-blue-600 hover:text-blue-700 text-xs disabled:text-gray-400 disabled:cursor-not-allowed"
+                          className="text-blue-600 hover:text-blue-700 text-xs"
                         >
-                          {copied ? 'Copied!' : 'Copy'}
+                          Copy
                         </button>
                       </div>
                     </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-800">
+                      💡 <strong>Important:</strong> Click "Copy & Continue" to copy the wallet address and create your subscription. Then make the payment and upload proof.
+                    </p>
                   </div>
                 </div>
               )}
@@ -794,7 +903,7 @@ function PaymentProofStep({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="text-sm text-green-800">
-              <p className="font-medium">Subscription Created!</p>
+              <p className="font-medium">Subscription {isExistingSubscription ? 'Updated' : 'Created'}!</p>
               <p>Please make the payment and upload proof below. You can cancel if you change your mind.</p>
             </div>
           </div>
@@ -892,7 +1001,7 @@ function PaymentProofStep({
               disabled={isSubmitting}
               className="border border-red-300 text-red-700 py-2 px-6 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
             >
-              Cancel Subscription
+              {isExistingSubscription ? 'Cancel Update' : 'Cancel Subscription'}
             </button>
             <div className="flex space-x-3">
               <button

@@ -6,19 +6,17 @@ export interface MiningServerAttributes {
   name: string;
   hashRate: string;
   powerConsumptionInKwH: string;
-  isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface MiningServerCreationAttributes extends Optional<MiningServerAttributes, 'id' | 'isActive' | 'createdAt' | 'updatedAt'> {}
+export interface MiningServerCreationAttributes extends Optional<MiningServerAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
 
 class MiningServer extends Model<MiningServerAttributes, MiningServerCreationAttributes> implements MiningServerAttributes {
   public id!: number;
   public name!: string;
   public hashRate!: string;
   public powerConsumptionInKwH!: string;
-  public isActive!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -42,11 +40,7 @@ MiningServer.init(
       type: DataTypes.STRING(50),
       allowNull: false,
     },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
+
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,

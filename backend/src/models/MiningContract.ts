@@ -7,12 +7,12 @@ export interface MiningContractAttributes {
   periodReturn: number;
   period: 'daily' | 'weekly' | 'fortnightly' | 'monthly'
  minimumDeposit:number
-  isActive: boolean;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface MiningContractCreationAttributes extends Optional<MiningContractAttributes, 'id' | 'isActive' | 'createdAt' | 'updatedAt'> {}
+export interface MiningContractCreationAttributes extends Optional<MiningContractAttributes, 'id' |  'createdAt' | 'updatedAt'> {}
 
 class MiningContract extends Model<MiningContractAttributes, MiningContractCreationAttributes> implements MiningContractAttributes {
   public id!: number;
@@ -20,7 +20,7 @@ class MiningContract extends Model<MiningContractAttributes, MiningContractCreat
   public periodReturn!: number;
  public minimumDeposit!:number
   public period!: 'daily' | 'weekly' | 'fortnightly' | 'monthly';
-  public isActive!: boolean;
+
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -48,11 +48,7 @@ MiningContract.init(
       type: DataTypes.ENUM('daily', 'weekly', 'fortnightly', 'monthly'),
       allowNull: false,
     },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
+
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,

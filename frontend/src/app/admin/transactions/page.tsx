@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DataTable, Table } from '../../../components/ui/table';
+import { DataTable} from '../../../components/ui/table';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { transactionService } from '../../../services/transactionService';
@@ -23,9 +23,9 @@ export default function TransactionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [editAmount, setEditAmount] = useState<string>('');
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [approvingTransaction, setApprovingTransaction] = useState<Transaction | null>(null);
+  const [actualAmount, setActualAmount] = useState<string>('');
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const itemsPerPage = 10;
@@ -77,48 +77,51 @@ export default function TransactionsPage() {
     return labels[status as keyof typeof labels] || status;
   };
 
-  const handleStatusUpdate = async (transactionId: number, newStatus: string) => {
-    try {
-      await transactionService.updateTransactionStatus(transactionId, { 
-        status: newStatus as any,
-        amountInUSD: transactions.find(t => t.id === transactionId)?.amountInUSD || 0
-      });
-      await loadTransactions(); // Reload to reflect changes
-    } catch (error) {
-      console.error('Failed to update transaction status:', error);
-    }
+  const handleApproveTransaction = (transaction: Transaction) => {
+    setApprovingTransaction(transaction);
+    setActualAmount(transaction.amountInUSD.toString()); // Start with the claimed amount
+    setIsApproveDialogOpen(true);
   };
 
-  const handleEditAmount = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
-    setEditAmount(transaction.amountInUSD.toString());
-    setIsEditDialogOpen(true);
-  };
+  const handleConfirmApproval = async () => {
+    if (!approvingTransaction || !actualAmount) return;
 
-  const handleUpdateAmount = async () => {
-    if (!editingTransaction || !editAmount) return;
-
-    const newAmount = parseFloat(editAmount);
-    if (isNaN(newAmount) || newAmount <= 0) {
-      alert('Please enter a valid amount');
+    const confirmedAmount = parseFloat(actualAmount);
+    if (isNaN(confirmedAmount) || confirmedAmount <= 0) {
+      alert('Please enter a valid amount greater than 0');
       return;
     }
 
     setIsUpdating(true);
     try {
-      await transactionService.updateTransactionStatus(editingTransaction.id, {
-        status: editingTransaction.status,
-        amountInUSD: newAmount
+      await transactionService.updateTransactionStatus(approvingTransaction.id, {
+        status: 'successful',
+        amountInUSD: confirmedAmount
       });
       await loadTransactions();
-      setIsEditDialogOpen(false);
-      setEditingTransaction(null);
-      setEditAmount('');
+      setIsApproveDialogOpen(false);
+      setApprovingTransaction(null);
+      setActualAmount('');
     } catch (error) {
-      console.error('Failed to update transaction amount:', error);
-      alert('Failed to update transaction amount');
+      console.error('Failed to approve transaction:', error);
+      alert('Failed to approve transaction. Please try again.');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleRejectTransaction = async (transactionId: number) => {
+    try {
+      const transaction = transactions.find(t => t.id === transactionId);
+      if (!transaction) return;
+
+      await transactionService.updateTransactionStatus(transactionId, {
+        status: 'failed',
+        amountInUSD: transaction.amountInUSD // Keep original amount for rejected transactions
+      });
+      await loadTransactions();
+    } catch (error) {
+      console.error('Failed to reject transaction:', error);
     }
   };
 
@@ -132,6 +135,7 @@ export default function TransactionsPage() {
             {row.miner?.firstname} {row.miner?.lastname}
           </p>
           <p className="text-sm text-gray-600">{row.miner?.email}</p>
+          <p className="text-xs text-gray-500">ID: {row.minerId}</p>
         </div>
       ),
     },
@@ -139,38 +143,38 @@ export default function TransactionsPage() {
       key: 'amountInUSD',
       label: 'Amount',
       render: (value: number, row: Transaction) => (
-        <div className="flex items-center space-x-2">
-          <span className="font-medium">
+        <div className="text-center">
+          <span className="font-medium text-lg">
             {formatCurrency(value)}
           </span>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => handleEditAmount(row)}
-            className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
-            title="Edit amount"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </Button>
+          {row.status === 'pending' && (
+            <p className="text-xs text-gray-500 mt-1">Claimed by user</p>
+          )}
+          {row.status === 'successful' && (
+            <p className="text-xs text-green-600 mt-1">Confirmed by admin</p>
+          )}
         </div>
       ),
     },
     {
       key: 'entity',
       label: 'Type',
-      render: (value: string) => (
-        <Badge variant={value === 'subscription' ? 'secondary': 'default'}>
-          {value === 'subscription' ? 'Subscription' : 'KYC Fee'}
-        </Badge>
+      render: (value: string, row: Transaction) => (
+        <div>
+          <Badge variant={value === 'subscription' ? 'secondary' : 'default'}>
+            {value === 'subscription' ? 'Subscription' : 'KYC Fee'}
+          </Badge>
+          {row.entityId && (
+            <p className="text-xs text-gray-500 mt-1">Ref: {row.entityId}</p>
+          )}
+        </div>
       ),
     },
     {
       key: 'status',
       label: 'Status',
       render: (value: string, row: Transaction) => (
-        <div className="flex items-center space-x-2">
+        <div className="space-y-2">
           <Badge variant={getStatusVariant(value)}>
             {getStatusLabel(value)}
           </Badge>
@@ -178,17 +182,16 @@ export default function TransactionsPage() {
             <div className="flex space-x-1">
               <Button
                 size="sm"
-                variant="outline"
-                onClick={() => handleStatusUpdate(row.id, 'successful')}
-                className="h-6 text-xs"
+                onClick={() => handleApproveTransaction(row)}
+                className="h-6 text-xs bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
               >
                 Approve
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleStatusUpdate(row.id, 'failed')}
-                className="h-6 text-xs text-red-600"
+                onClick={() => handleRejectTransaction(row.id)}
+                className="h-6 text-xs text-red-600 border-red-200 hover:bg-red-50"
               >
                 Reject
               </Button>
@@ -201,7 +204,7 @@ export default function TransactionsPage() {
       key: 'originatingId',
       label: 'Transaction ID',
       render: (value: string) => (
-        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+        <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
           {value?.slice(0, 8)}...
         </code>
       ),
@@ -209,7 +212,14 @@ export default function TransactionsPage() {
     {
       key: 'createdAt',
       label: 'Date',
-      render: (value: string) => formatDate(value),
+      render: (value: string) => (
+        <div className="text-sm">
+          <p>{formatDate(value)}</p>
+          <p className="text-xs text-gray-500">
+            {new Date(value).toLocaleTimeString()}
+          </p>
+        </div>
+      ),
     },
   ];
 
@@ -226,17 +236,25 @@ export default function TransactionsPage() {
     kyc: transactions.filter(t => t.entity === 'kyc').length,
   };
 
+  const totalVolume = transactions
+    .filter(t => t.status === 'successful')
+    .reduce((sum, t) => sum + t.amountInUSD, 0);
+
+  const pendingVolume = transactions
+    .filter(t => t.status === 'pending')
+    .reduce((sum, t) => sum + t.amountInUSD, 0);
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Transaction Management</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Monitor and manage all platform transactions
+          Review and approve pending transactions by confirming actual amounts
         </p>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
@@ -254,6 +272,9 @@ export default function TransactionsPage() {
                 {statusCounts.pending}
               </p>
               <p className="text-sm text-gray-600">Pending</p>
+              <p className="text-xs text-yellow-600">
+                {formatCurrency(pendingVolume)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -263,7 +284,7 @@ export default function TransactionsPage() {
               <p className="text-2xl font-bold text-green-600">
                 {statusCounts.successful}
               </p>
-              <p className="text-sm text-gray-600">Successful</p>
+              <p className="text-sm text-gray-600">Approved</p>
             </div>
           </CardContent>
         </Card>
@@ -273,7 +294,31 @@ export default function TransactionsPage() {
               <p className="text-2xl font-bold text-red-600">
                 {statusCounts.failed}
               </p>
-              <p className="text-sm text-gray-600">Failed</p>
+              <p className="text-sm text-gray-600">Rejected</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600">
+                {formatCurrency(totalVolume)}
+              </p>
+              <p className="text-sm text-gray-600">Total Volume</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Button 
+                onClick={loadTransactions}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                Refresh Data
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -297,12 +342,15 @@ export default function TransactionsPage() {
                 {[
                   { value: 'all', label: 'All', count: statusCounts.all },
                   { value: 'pending', label: 'Pending', count: statusCounts.pending },
-                  { value: 'successful', label: 'Successful', count: statusCounts.successful },
-                  { value: 'failed', label: 'Failed', count: statusCounts.failed },
+                  { value: 'successful', label: 'Approved', count: statusCounts.successful },
+                  { value: 'failed', label: 'Rejected', count: statusCounts.failed },
                 ].map((filter) => (
                   <button
                     key={filter.value}
-                    onClick={() => setStatusFilter(filter.value)}
+                    onClick={() => {
+                      setStatusFilter(filter.value);
+                      setCurrentPage(1);
+                    }}
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                       statusFilter === filter.value
                         ? 'bg-green-600 text-white'
@@ -326,7 +374,10 @@ export default function TransactionsPage() {
                 ].map((filter) => (
                   <button
                     key={filter.value}
-                    onClick={() => setTypeFilter(filter.value)}
+                    onClick={() => {
+                      setTypeFilter(filter.value);
+                      setCurrentPage(1);
+                    }}
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                       typeFilter === filter.value
                         ? 'bg-green-600 text-white'
@@ -348,6 +399,8 @@ export default function TransactionsPage() {
           <CardTitle>Transaction List</CardTitle>
           <CardDescription>
             {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} found
+            {statusFilter !== 'all' && ` • Filtered by: ${statusFilter}`}
+            {typeFilter !== 'all' && `, ${typeFilter}`}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -358,78 +411,125 @@ export default function TransactionsPage() {
             emptyMessage="No transactions found matching your filters."
           />
           {filteredTransactions.length > itemsPerPage && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(filteredTransactions.length / itemsPerPage)}
-              onPageChange={setCurrentPage}
-            />
+            <div className="p-4 border-t">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(filteredTransactions.length / itemsPerPage)}
+                onPageChange={setCurrentPage}
+              />
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Edit Amount Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+      {/* Approve Transaction Dialog */}
+      <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Transaction Amount</DialogTitle>
+            <DialogTitle>Approve Transaction</DialogTitle>
             <DialogDescription>
-              Update the amount for this transaction. This will affect the miner's subscription balance.
+              Confirm the actual transaction amount and approve this payment.
             </DialogDescription>
           </DialogHeader>
           
-          {editingTransaction && (
+          {approvingTransaction && (
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="font-medium text-gray-600">Miner</p>
-                  <p>{editingTransaction.miner?.firstname} {editingTransaction.miner?.lastname}</p>
+              {/* Transaction Details */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium text-gray-600">Miner</p>
+                    <p className="font-semibold">
+                      {approvingTransaction.miner?.firstname} {approvingTransaction.miner?.lastname}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-600">Type</p>
+                    <Badge variant={approvingTransaction.entity === 'subscription' ? 'secondary' : 'default'}>
+                      {approvingTransaction.entity === 'subscription' ? 'Subscription' : 'KYC Fee'}
+                    </Badge>
+                  </div>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-600">Current Amount</p>
-                  <p className="font-semibold">{formatCurrency(editingTransaction.amountInUSD)}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-600">Type</p>
-                  <p>{editingTransaction.entity === 'subscription' ? 'Subscription' : 'KYC Fee'}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-600">Status</p>
-                  <Badge variant={getStatusVariant(editingTransaction.status)}>
-                    {getStatusLabel(editingTransaction.status)}
-                  </Badge>
+                  <p className="font-medium text-gray-600">Claimed Amount</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {formatCurrency(approvingTransaction.amountInUSD)}
+                  </p>
                 </div>
               </div>
 
+              {/* Actual Amount Input */}
               <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
-                  New Amount (USD)
+                <label htmlFor="actualAmount" className="block text-sm font-medium text-gray-700 mb-2">
+                  Actual Amount Received (USD) *
                 </label>
                 <Input
-                  id="amount"
+                  id="actualAmount"
                   type="number"
-                  value={editAmount}
-                  onChange={(e) => setEditAmount(e.target.value)}
-                  placeholder="Enter new amount"
+                  value={actualAmount}
+                  onChange={(e) => setActualAmount(e.target.value)}
+                  placeholder="Enter the actual amount received"
                   min="0"
                   step="0.01"
+                  className="text-lg font-medium border-green-300 focus:border-green-500"
                 />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Claimed: {formatCurrency(approvingTransaction.amountInUSD)}</span>
+                  {actualAmount && (
+                    <span className={
+                      parseFloat(actualAmount) !== approvingTransaction.amountInUSD 
+                        ? 'text-orange-600 font-medium' 
+                        : 'text-green-600'
+                    }>
+                      Difference: {formatCurrency(parseFloat(actualAmount) - approvingTransaction.amountInUSD)}
+                    </span>
+                  )}
+                </div>
               </div>
+
+              {/* Warning for amount differences */}
+              {actualAmount && parseFloat(actualAmount) !== approvingTransaction.amountInUSD && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <p className="text-sm text-orange-800">
+                    <strong>Note:</strong> The actual amount differs from the claimed amount. 
+                    This will update the miner's balance accordingly.
+                  </p>
+                </div>
+              )}
+
+              {/* Subscription-specific warning */}
+              {approvingTransaction.entity === 'subscription' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Subscription Impact:</strong> This amount will be added to the miner's 
+                    subscription balance and affect their mining earnings.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
+              onClick={() => setIsApproveDialogOpen(false)}
               disabled={isUpdating}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleUpdateAmount}
-              disabled={isUpdating || !editAmount}
+              onClick={handleConfirmApproval}
+              disabled={isUpdating || !actualAmount}
+              className="bg-green-600 hover:bg-green-700"
             >
-              {isUpdating ? 'Updating...' : 'Update Amount'}
+              {isUpdating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Approving...
+                </>
+              ) : (
+                'Confirm & Approve'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

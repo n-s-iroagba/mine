@@ -42,15 +42,6 @@ export default function AdminMiningContractsPage() {
     }
   );
 
-  const toggleStatusMutation = useApiMutation(
-    ({ id, isActive }: { id: number; isActive: boolean }) =>
-      miningContractService.updateContract(id, { isActive }),
-    {
-      onSuccess: () => {
-        refetch();
-      },
-    }
-  );
 
   const handleSort = (key: string, direction: 'asc' | 'desc') => {
     setSortKey(key);
@@ -63,9 +54,7 @@ export default function AdminMiningContractsPage() {
     }
   };
 
-  const handleToggleStatus = async (id: number, currentStatus: boolean) => {
-    await toggleStatusMutation.mutateAsync({ id, isActive: !currentStatus });
-  };
+
 
   // Filter contracts based on search term
   const filteredContracts = contracts.filter((contract: MiningContractWithServer) => {
@@ -74,9 +63,7 @@ export default function AdminMiningContractsPage() {
       contract.period?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contract.periodReturn?.toString().includes(searchTerm);
 
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && contract.isActive) ||
-      (statusFilter === 'inactive' && !contract.isActive);
+    const matchesStatus = statusFilter === 'all' 
 
     const matchesPeriod = periodFilter === 'all' || contract.period === periodFilter;
 
@@ -99,26 +86,10 @@ export default function AdminMiningContractsPage() {
     currentPage * itemsPerPage
   );
 
-  const getStatusBadgeVariant = (isActive: boolean) => {
-    return isActive ? 'secondary' : 'default';
-  };
 
-  const getPeriodBadgeVariant = (period: string) => {
-    switch (period) {
-      case 'daily': return 'default';
-      case 'weekly': return 'secondary';
-      case 'fortnightly': return 'outline';
-      case 'monthly': return 'secondary';
-      default: return 'default';
-    }
-  };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+
+
 
   const columns = [
     {
@@ -172,28 +143,7 @@ export default function AdminMiningContractsPage() {
         </Badge>
       ),
     },
-    {
-      key: 'isActive',
-      label: 'Status',
-      sortable: true,
-      mobilePriority: 4,
-      render: (value: boolean, row: MiningContract) => (
-        <div className="flex items-center space-x-2">
-          <Badge variant={getStatusBadgeVariant(value)}>
-            {value ? 'Active' : 'Inactive'}
-          </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleToggleStatus(row.id, value)}
-            className="h-6 text-xs"
-            disabled={toggleStatusMutation.isPending}
-          >
-            {value ? 'Deactivate' : 'Activate'}
-          </Button>
-        </div>
-      ),
-    },
+
     {
       key: 'subscriptionCount',
       label: 'Subscriptions',
@@ -205,16 +155,7 @@ export default function AdminMiningContractsPage() {
         </div>
       ),
     },
-    {
-      key: 'createdAt',
-      label: 'Created',
-      sortable: true,
-      render: (value: string) => (
-        <div className="text-sm text-gray-600">
-          {new Date(value).toLocaleDateString()}
-        </div>
-      ),
-    },
+
     {
       key: 'actions',
       label: 'Actions',
@@ -226,7 +167,7 @@ export default function AdminMiningContractsPage() {
               View
             </Button>
           </Link>
-          <Link href={`/admin/contracts/edit/${row.id}`}>
+          <Link href={`/admin/contracts/${row.id}/edit`}>
             <Button variant="outline" size="sm">
               Edit
             </Button>
@@ -240,6 +181,16 @@ export default function AdminMiningContractsPage() {
           >
             {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
           </Button>
+        </div>
+      ),
+    },
+        {
+      key: 'createdAt',
+      label: 'Created',
+      sortable: true,
+      render: (value: string) => (
+        <div className="text-sm text-gray-600">
+          {new Date(value).toLocaleDateString()}
         </div>
       ),
     },
@@ -259,9 +210,8 @@ export default function AdminMiningContractsPage() {
     );
   }
 
-  const activeContractsCount = contracts.filter((c: MiningContract) => c.isActive).length;
-  const inactiveContractsCount = contracts.filter((c: MiningContract) => !c.isActive).length;
-
+  const activeContractsCount = contracts.length;
+  const inactiveContractsCount = 0
   return (
     <div className="space-y-6">
       {/* Header */}

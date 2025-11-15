@@ -1,32 +1,41 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 
+export enum DepositStatus {
+  NO_DEPOSIT = "no deposit",
+  PENDING = 'deposit pending approval',
+  INCOMPLETE = 'incomplete deposit',
+  COMPLETE_DEPOSIT = 'complete deposit'
+}
+
 export interface MiningSubscriptionAttributes {
   id: number;
   miningContractId: number;
   amountDeposited: number;
   shouldUpdateAutomatically: boolean;
-  earnings: number;
+  totalEarnings: number;
   minerId: number;
-  currency:string
-  symbol:string
-  isActive: boolean;
+  currency: string;
+  symbol: string;
+  dateOfFirstPayment:Date
+  depositStatus: DepositStatus;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export interface MiningSubscriptionCreationAttributes extends Optional<MiningSubscriptionAttributes, 'id' | 'shouldUpdateAutomatically' | 'earnings' | 'isActive' | 'createdAt' | 'updatedAt'|'amountDeposited'> {}
+export interface MiningSubscriptionCreationAttributes extends Optional<MiningSubscriptionAttributes, 'id' | 'shouldUpdateAutomatically' | 'totalEarnings' | 'depositStatus' | 'createdAt' | 'updatedAt' | 'amountDeposited'|'dateOfFirstPayment'> {}
 
 class MiningSubscription extends Model<MiningSubscriptionAttributes, MiningSubscriptionCreationAttributes> implements MiningSubscriptionAttributes {
   public id!: number;
   public miningContractId!: number;
   public amountDeposited!: number;
   public shouldUpdateAutomatically!: boolean;
-  public earnings!: number;
+   public dateOfFirstPayment!:Date
+  public totalEarnings!: number;
   public minerId!: number;
-  public currency!:string;
-    public symbol!:string;
-  public isActive!: boolean;
+  public currency!: string;
+  public symbol!: string;
+  public depositStatus!: DepositStatus;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -47,15 +56,16 @@ MiningSubscription.init(
       },
     },
     amountDeposited: {
-      type: DataTypes.DECIMAL(15, 2),
+      type: DataTypes.DOUBLE,
       allowNull: false,
+      defaultValue: 0,
     },
     shouldUpdateAutomatically: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
     },
-    earnings: {
+    totalEarnings: {
       type: DataTypes.DECIMAL(15, 2),
       allowNull: false,
       defaultValue: 0,
@@ -68,10 +78,29 @@ MiningSubscription.init(
         key: 'id',
       },
     },
-    isActive: {
-      type: DataTypes.BOOLEAN,
+    depositStatus: {
+      type: DataTypes.ENUM(
+        DepositStatus.NO_DEPOSIT,
+        DepositStatus.PENDING,
+        DepositStatus.INCOMPLETE,
+        DepositStatus.COMPLETE_DEPOSIT
+      ),
       allowNull: false,
-      defaultValue: true,
+      defaultValue: DepositStatus.NO_DEPOSIT,
+    },
+    currency: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    symbol: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+      dateOfFirstPayment: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue:null
+  
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -83,13 +112,6 @@ MiningSubscription.init(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-    currency: {
-      type:DataTypes.STRING,
-    },
-        symbol: {
-      type:DataTypes.STRING,
-    },
-
   },
   {
     sequelize,

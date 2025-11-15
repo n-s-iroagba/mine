@@ -125,7 +125,7 @@ export function MiningContractForm({ contract, isEdit = false }: MiningContractF
   };
 
   // Filter only active mining servers for selection
-  const activeMiningServers = miningServers.filter(server => server.isActive);
+  const activeMiningServers = miningServers;
 
   return (
     <div className="max-w-2xl mx-auto">

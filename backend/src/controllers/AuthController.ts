@@ -21,6 +21,20 @@ export class AuthController {
   signupMiner = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.authService.signupMiner(req.body);
+                   const verified = result as AuthServiceLoginResponse
+
+        const cookieOptions = getCookieOptions()
+        console.log('Setting refresh token cookie with options:', cookieOptions)
+      const clearOptions = { ...getCookieOptions() };
+delete clearOptions.maxAge; // ✅ remove deprecated field
+
+res.clearCookie('refreshToken', clearOptions as any);
+        res.cookie('refreshToken', verified.refreshToken, cookieOptions as any)
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Login successful'
+      });
       res.status(201).json({
         success: true,
         data: result,
@@ -34,6 +48,20 @@ export class AuthController {
   signupAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.authService.signUpAdmin(req.body);
+                   const verified = result as AuthServiceLoginResponse
+
+        const cookieOptions = getCookieOptions()
+        console.log('Setting refresh token cookie with options:', cookieOptions)
+      const clearOptions = { ...getCookieOptions() };
+delete clearOptions.maxAge; // ✅ remove deprecated field
+
+res.clearCookie('refreshToken', clearOptions as any);
+        res.cookie('refreshToken', verified.refreshToken, cookieOptions as any)
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Login successful'
+      });
       res.status(201).json({
         success: true,
         data: result,
