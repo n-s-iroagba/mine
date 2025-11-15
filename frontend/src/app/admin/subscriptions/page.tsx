@@ -53,7 +53,7 @@ export default function AdminMiningSubscriptionsPage() {
 
   const toggleStatusMutation = useApiMutation(
     ({ id, isActive }: { id: number; isActive: boolean }) =>
-      miningSubscriptionService.updateSubscription(id, { isActive }),
+      miningSubscriptionService.updateSubscription(id, {  }),
     {
       invalidateQueries: [['admin-mining-subscriptions']],
     }

@@ -10,11 +10,22 @@ import {
 
 } from '../types/api';
 import { MiningSubscription, MiningSubscriptionWithTransactions } from '@/types/subscription';
-
+interface FullMiningSubscription extends MiningSubscription {
+  miner: {
+    firstname: string;
+    lastname: string;
+    country: string;
+  };
+  miningContract?: {
+    periodReturn: number;
+    period: string;
+  };
+  earnings: number; // Ensure earnings is explicitly defined
+}
 export const miningSubscriptionService = {
   // ✅ Get all subscriptions (admin only)
-  async getAllSubscriptions(): Promise<MiningSubscriptionWithTransactions[]> {
-    const response = await apiService.get<ApiResponse<MiningSubscriptionWithTransactions[]>>(
+  async getAllSubscriptions(): Promise<FullMiningSubscription[]> {
+    const response = await apiService.get<ApiResponse<FullMiningSubscription[]>>(
       API_ROUTES.subscriptions.getAll
     );
     if (response.success && response.data) return response.data;
