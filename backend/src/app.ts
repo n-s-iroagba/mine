@@ -8,6 +8,7 @@ import routes from './routes';
 import { errorHandler } from './middlewares/errorHandler';
 import sequelize from './config/database';
 import { requestLogger } from './middlewares/requestLogger';
+import { MiningSubscription } from './models';
 
 
 const app = express();
@@ -85,10 +86,13 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     // Sync database
-    await sequelize.authenticate();
-    console.log('✅ Database connection established successfully.');
-
-    // Sync models with database
+    // await sequelize.authenticate();
+    // console.log('✅ Database connection established successfully.');
+    // const subs = await MiningSubscription.findAll()
+    // for(const sub of subs){
+    //   sub.destroy()
+    // }
+    // Sync models with atabase
     if (process.env.NODE_ENV !== 'production') {
       await sequelize.sync(); // Use { force: true } to drop and recreate tables
       console.log('✅ Database synced successfully.');

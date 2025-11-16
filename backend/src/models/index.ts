@@ -107,6 +107,15 @@ User.hasOne(KYCFee, {
   as: 'kycFee',
 });
 
+Miner.hasMany(MiningSubscription,{
+  foreignKey:'minerId',
+  as:'subscriptions'
+})
+MiningSubscription.belongsTo(Miner,{
+  foreignKey:'minerId',
+  as:'subMiner'
+})
+
 
 
 // Define relationships
@@ -130,4 +139,5 @@ export {
   Transaction,
   KYC,
   KYCFee,
+  Earning
 };

@@ -116,6 +116,7 @@ export const API_ROUTES = {
     getById: (id: number) => `/transactions/${id}`,
     create: '/transactions',
     updateStatus: (id: number) => `/transactions/${id}/status`,
+    getBySubId:(subId:string) =>`/transactions/sub/${subId}`
   },
 
   // KYC Routes

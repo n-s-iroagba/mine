@@ -8,6 +8,7 @@ const transactionController = new TransactionController();
 // Public routes (with restrictions)
 router.get('/miner/:minerId', authenticate, transactionController.getTransactionsByMinerId);
 router.get('/:id', transactionController.getTransactionById);
+router.get('/sub/:id',transactionController.getBySubId)
 
 // Admin only routes
 router.get('/',   transactionController.getAllTransactions);

@@ -14,6 +14,7 @@ router.get('/:id/calculate-earnings', miningSubscriptionController.calculateEarn
 // Admin only routes
 router.get('/',   miningSubscriptionController.getAllSubscriptions);
 router.post('/:minerId',   miningSubscriptionController.createSubscription);
+router.patch('/:id',miningSubscriptionController.updateSubscription)
 router.patch('/:id/earnings',   miningSubscriptionController.updateEarnings);
 router.patch('/:id/deactivate',   miningSubscriptionController.deactivateSubscription);
 router.post('/process-daily-earnings',   miningSubscriptionController.processDailyEarnings);

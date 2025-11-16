@@ -3,6 +3,7 @@ import { MiningSubscriptionService } from '../services';
 import { BaseController } from './BaseController';
 import { validateData } from '../services/utils/helpers/validation';
 import { z } from 'zod';
+import { MiningSubscription } from '../models';
 
 
 
@@ -77,6 +78,22 @@ export class MiningSubscriptionController extends BaseController {
       const validatedData =validateData(updateEarningsSchema, req.body);
       
       const subscription = await this.miningSubscriptionService.updateEarnings(subscriptionId, req.body);
+      
+      return this.success(res, 'Earnings updated successfully', subscription);
+    } catch (error) {
+      return this.handleError(error, res, 'Failed to update earnings');
+    }
+  };
+
+  updateSubscription = async (req: Request, res: Response): Promise<Response | void> => {
+    try {
+   console.log(req.body)
+      
+      const id = parseInt(req.params.id);
+     
+      
+      const subscription = await MiningSubscription.update( { ...req.body },
+  { where: { id }, returning: true })
       
       return this.success(res, 'Earnings updated successfully', subscription);
     } catch (error) {

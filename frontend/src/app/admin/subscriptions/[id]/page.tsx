@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,14 +10,16 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { miningSubscriptionService} from '@/services';
 import { useApiQuery } from '@/hooks/useApi';
 import {Transaction } from '@/types/api';
-import { MiningSubscriptionWithTransactions } from '@/types/subscription';
+
 
 export default function MiningSubscriptionDetailsPage() {
   const params = useParams();
   const id = parseInt(params.id as string);
+  const [updateError,setUpdateError] = useState('')
+  const [updateLoading,setUpdateLoading] = useState(false)
 
-  const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError } = useApiQuery<any>(
-    ['mining-subscription', id],
+  const { data: subscription, isLoading: subscriptionLoading, error: subscriptionError,refetch } = useApiQuery<any>(
+    ['mining-subscription', id,updateLoading],
     () => miningSubscriptionService.getSubscriptionById(id)
   );
 const transactions = subscription?.transactions||[]
@@ -42,6 +44,24 @@ const transactions = subscription?.transactions||[]
       </div>
     );
   }
+const updateAutomaticUpdate = async () => {
+  try {
+    setUpdateLoading(true);
+
+    await miningSubscriptionService.updateSubscription(
+      subscription.id,
+      { shouldUpdateAutomatically: !subscription.shouldUpdateAutomatically }
+    );
+
+    await refetch(); // 🔥 THE FIX
+
+    setUpdateLoading(false);
+  } catch (err) {
+    console.error(err);
+    setUpdateLoading(false);
+    setUpdateError('Error toggling automatic update status');
+  }
+};
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -55,13 +75,7 @@ const transactions = subscription?.transactions||[]
     return `${miner.firstname} ${miner.lastname}`;
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active': return 'secondary';
-      case 'inactive': return 'default';
-      default: return 'default';
-    }
-  };
+
 
   const getTransactionStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -93,11 +107,7 @@ const transactions = subscription?.transactions||[]
           </p>
         </div>
         <div className="flex space-x-2 mt-4 sm:mt-0">
-          <Link href={`/admin/subscriptions/edit/${subscription.id}`}>
-            <Button variant="outline">
-              Edit Subscription
-            </Button>
-          </Link>
+      
           <Link href="/admin/subscriptions">
             <Button>
               Back to List
@@ -132,7 +142,7 @@ const transactions = subscription?.transactions||[]
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Earnings</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(subscription.earnings)}
+                  {formatCurrency(subscription.earnings??0)}
                 </p>
               </div>
               <div className="p-2 bg-green-100 rounded-lg">
@@ -144,43 +154,35 @@ const transactions = subscription?.transactions||[]
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Status</p>
-                <div className="mt-1">
-                  <Badge variant={getStatusBadgeVariant(subscription.isActive ? 'active' : 'inactive')}>
-                    {subscription.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-              </div>
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+       
 
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
+             <div  onClick={()=>{updateAutomaticUpdate()}}>
                 <p className="text-sm font-medium text-gray-600">Auto Update</p>
                 <div className="mt-1">
-                  <Badge variant={getAutoUpdateBadgeVariant(subscription.shouldUpdateAutomatically)}>
-                    {subscription.shouldUpdateAutomatically ? 'Enabled' : 'Disabled'}
-                  </Badge>
+               
+                  {updateLoading ? (
+                    <Badge variant="default" className="animate-pulse">
+                      Updating...
+                    </Badge>
+                  ) : (
+                    <Badge variant={getAutoUpdateBadgeVariant(subscription.shouldUpdateAutomatically)}>
+                      {subscription.shouldUpdateAutomatically ? 'Enabled' : 'Disabled'}
+                    </Badge>
+                  )}
+                  {updateError && (
+                    <p className="text-red-600 text-sm mt-2">{updateError}</p>
+                  )}
                 </div>
-              </div>
               <div className="p-2 bg-purple-100 rounded-lg">
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </div>
-            </div>
+                 </div>
+   </div>
           </CardContent>
         </Card>
       </div>
@@ -199,13 +201,13 @@ const transactions = subscription?.transactions||[]
             <div className="flex justify-between">
               <span className="font-medium">Amount Deposited:</span>
               <span className="font-semibold text-blue-600">
-                {formatCurrency(subscription.amountDeposited)}
+                {formatCurrency(subscription.amountDeposited??0)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">Earnings:</span>
               <span className="font-semibold text-green-600">
-                {formatCurrency(subscription.earnings)}
+                {formatCurrency(subscription.earnings??0)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -214,12 +216,7 @@ const transactions = subscription?.transactions||[]
                 {subscription.shouldUpdateAutomatically ? 'Enabled' : 'Disabled'}
               </Badge>
             </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Status:</span>
-              <Badge variant={getStatusBadgeVariant(subscription.isActive ? 'active' : 'inactive')}>
-                {subscription.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
+        
             <div className="flex justify-between">
               <span className="font-medium">Created:</span>
               <span>{new Date(subscription.createdAt).toLocaleString()}</span>
@@ -379,21 +376,14 @@ const transactions = subscription?.transactions||[]
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Link href={`/admin/subscriptions/edit/${subscription.id}`}>
-              <Button variant="outline">
-                Edit Subscription
-              </Button>
-            </Link>
-            <Link href={`/admin/transactions?entity=subscription&entityId=${subscription.id}`}>
+         
+            <Link href={`/admin/transactions/${subscription.id}`}>
               <Button variant="outline">
                 View All Transactions
               </Button>
             </Link>
-            <Link href={`/admin/miners/${subscription.minerId}`}>
-              <Button variant="outline">
-                View Miner Profile
-              </Button>
-            </Link>
+   
+          
             <Link href={`/admin/contracts/${subscription.miningContractId}`}>
               <Button variant="outline">
                 View Contract Details

@@ -3,6 +3,8 @@ import { TransactionService } from '../services';
 import { BaseController } from './BaseController';
 import { validateData } from '../services/utils/helpers/validation';
 import { z } from 'zod';
+import { MiningSubscription, Transaction } from '../models';
+import Miner from '../models/Miner';
 
 const createTransactionSchema = z.object({
   amountInUSD: z.number().positive('Amount must be positive'),
@@ -60,6 +62,26 @@ export class TransactionController extends BaseController {
       return this.handleError(error, res, 'Failed to retrieve transaction');
     }
   };
+    getBySubId = async (req: Request, res: Response): Promise<Response | void> => {
+    try {
+      const subId = parseInt(req.params.id);
+      
+      const transaction = await Transaction.findAll({
+     where:{
+      entity:'subscription',
+      entityId:subId
+      
+     }
+          
+
+      })
+      
+      return this.success(res, 'Transaction retrieved successfully', transaction);
+    } catch (error) {
+      return this.handleError(error, res, 'Failed to retrieve transaction');
+    }
+  };
+
 
   getTransactionsByMinerId = async (req: Request, res: Response): Promise<Response | void> => {
     try {

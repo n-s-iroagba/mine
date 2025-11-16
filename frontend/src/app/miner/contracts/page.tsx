@@ -347,55 +347,63 @@ function LargeContractCard({ contract, isSubscribed, subscription, onSubscribe }
     }
   };
 
-  // Get status badge based on card status
-  const renderStatusBadge = () => {
-    switch (cardStatus) {
-      case 'no_deposit':
-        return (
-          <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200">
-            ⏳ Awaiting Deposit
-          </Badge>
-        );
-      
-      case 'pending_with_amount':
+const renderStatusBadge = () => {
+  if (!subscription) {
+    return (
+      <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">
+        ✖️ Not Subscribed
+      </Badge>
+    );
+  }
+
+  const { depositStatus, amountDeposited } = subscription;
+
+  switch (depositStatus) {
+
+    case DepositStatus.NO_DEPOSIT:
+      return (
+        <Badge variant="destructive" className="bg-red-100 text-red-700 border-red-200">
+          ⏳ Awaiting Deposit
+        </Badge>
+      );
+
+    case DepositStatus.PENDING:
+      if (amountDeposited > 0) {
         return (
           <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 border-yellow-200">
-            🔄 Verification Pending
+                  🔄 New Deposit Verification Pending
           </Badge>
         );
-      
-      case 'pending_no_amount':
-        return (
-          <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200">
-            ⚠️ Deposit Required
-          </Badge>
-        );
-      
-      case 'incomplete_deposit':
-        return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
-            💰 Complete Deposit
-          </Badge>
-        );
-      
-      case 'active_mining':
-        return (
-          <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">
-            ⛏️ Active Mining ({daysSinceFirstPayment}/{contractDuration} days)
-          </Badge>
-        );
-      
-      case 'active_with_payout':
-        return (
-          <Badge variant="default" className="bg-emerald-100 text-emerald-700 border-emerald-200">
-            🎉 Ready for Payout!
-          </Badge>
-        );
-      
-      default:
-        return null;
-    }
-  };
+      }
+      return (
+        <Badge variant="secondary" className="bg-orange-100 text-orange-700 border-orange-200">
+               🔄 Deposit Verification Pending
+        </Badge>
+      );
+
+    case DepositStatus.INCOMPLETE:
+      return (
+        <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+          💰 Complete Deposit
+        </Badge>
+      );
+
+    case DepositStatus.COMPLETE_DEPOSIT:
+      return isPayoutEligible() ? (
+        <Badge variant="default" className="bg-emerald-100 text-emerald-700 border-emerald-200">
+          🎉 Ready for Payout!
+        </Badge>
+      ) : (
+        <Badge variant="default" className="bg-green-100 text-green-700 border-green-200">
+          ⛏️ Active Mining ({daysSinceFirstPayment}/{contractDuration} days)
+        </Badge>
+      );
+
+    default:
+      return null;
+  }
+};
+
 
   // Get main action button based on status
   const renderActionButton = () => {
@@ -677,7 +685,7 @@ function SmallContractCard({ contract, onSubscribe }: any) {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="text-center">
             <div className="text-xs text-gray-600 mb-1">Hash Rate</div>
-            <div className="font-bold text-gray-900 text-sm">{contract.miningServer?.hashRate}</div>
+            <div className="font-bold text-gray-900 text-sm">{contract.miningServer?.hashRate} EH/s</div>
           </div>
           <div className="text-center">
             <div className="text-xs text-gray-600 mb-1">Min Deposit</div>
@@ -703,7 +711,7 @@ function SmallContractCard({ contract, onSubscribe }: any) {
             <svg className="w-3 h-3 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            Daily payouts
+            {contract.period} payouts.
           </div>
         </div>
 

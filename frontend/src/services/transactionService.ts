@@ -14,6 +14,15 @@ export const transactionService = {
     }
     throw new Error(response.message);
   },
+  async getAllTransactionsBySubId(subId:string): Promise<Transaction[]> {
+    const response = await apiService.get<ApiResponse<Transaction[]>>(
+      API_ROUTES.transactions.getBySubId(subId)
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message);
+  },
 
 
 

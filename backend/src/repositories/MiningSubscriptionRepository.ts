@@ -5,7 +5,7 @@ import { BaseRepository } from './BaseRepository';
 export interface FullSubscriptionDetails extends MiningSubscription {
   miningContract: MiningContract;
   transactions: Transaction[];
-  miner:Miner
+  miner: Miner
 }
 
 export interface IMiningSubscriptionRepository {
@@ -13,7 +13,7 @@ export interface IMiningSubscriptionRepository {
   findByIdWithDetails(id: number): Promise<MiningSubscription | null>;
   findAllWithDetails(): Promise<MiningSubscription[]>;
   findByMinerIdWithDetails(minerId: number): Promise<MiningSubscription[]>;
-  updateEarnings(id: number, earnings: number): Promise<MiningSubscription|null>;
+  updateEarnings(id: number, earnings: number): Promise<MiningSubscription | null>;
 }
 
 export class MiningSubscriptionRepository extends BaseRepository<MiningSubscription> implements IMiningSubscriptionRepository {
@@ -34,7 +34,7 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
   async findByIdWithDetails(id: number): Promise<FullSubscriptionDetails | null> {
     try {
       return await this.findOne({ id }, {
-  include: [
+        include: [
           {
             association: 'miningContract',
             include: ['miningServer'],
@@ -42,9 +42,9 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
           {
             model: Transaction,
             as: 'transactions',
-            where: { 
+            where: {
               entity: 'subscription',
-             
+
             },
             required: false,
           },
@@ -58,7 +58,7 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
   async findAllWithDetails(): Promise<FullSubscriptionDetails[]> {
     try {
       return await this.findAll({
-    include: [
+        include: [
           {
             association: 'miningContract',
             include: ['miningServer'],
@@ -66,16 +66,16 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
           {
             model: Transaction,
             as: 'transactions',
-            where: { 
+            where: {
               entity: 'subscription',
-            
+
             },
             required: false,
-          },{
-            model:Miner,
-            as:'miner'
+          }, {
+            association: 'miner',
+        
+         
           }
-
         ],
         order: [['createdAt', 'DESC']],
       }) as FullSubscriptionDetails[];
@@ -96,12 +96,19 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
           {
             model: Transaction,
             as: 'transactions',
-            where: { 
+            where: {
               entity: 'subscription',
-              minerId: minerId 
+              minerId: minerId
             },
             required: false,
           },
+          {
+            model: Miner,
+            as: 'miner',
+            where: {
+              id: minerId
+            }
+          }
         ],
         order: [['createdAt', 'DESC']],
       }) as FullSubscriptionDetails[];
@@ -110,13 +117,13 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
     }
   }
 
-  async updateEarnings(id: number, earnings: number): Promise<MiningSubscription|null> {
-    
+  async updateEarnings(id: number, earnings: number): Promise<MiningSubscription | null> {
+
     try {
       const subscription = await this.findById(id)
-     subscription.totalEarnings += earnings
-     await subscription.save()
-     return subscription
+      subscription.totalEarnings += earnings
+      await subscription.save()
+      return subscription
     } catch (error) {
       throw new Error(`Error updating earnings for subscription ${id}: ${error}`);
     }
