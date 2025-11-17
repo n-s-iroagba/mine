@@ -9,30 +9,20 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Skeleton, TableSkeleton } from '@/components/ui/Skeleton';
 import { DataTable } from '@/components/ui/table';
 import { miningSubscriptionService } from '@/services';
-import { CreditDebitModal } from '@/components/UpdateEarningsModal';
-import { MiningContract } from '@/types/api';
+import { CreditDebitDepositModal } from '@/components/CreditDebitDepositModal';
+import {  MiningContract } from '@/types/api';
 import { useApiQuery, useApiMutation } from '@/hooks/useApi';
-import { MiningSubscription } from '@/types/subscription';
+import { FullMiningSubscription, MiningSubscriptionWithMiner } from '@/types/subscription';
+import { EarningModal } from '@/components/EarningModal';
 
-interface FullMiningSubscription extends MiningSubscription {
-  miner: {
-    firstname: string;
-    lastname: string;
-    country: string;
-  };
-  miningContract?: {
-    periodReturn: number;
-    period: string;
-  };
-  earnings: number; // Ensure earnings is explicitly defined
-}
+
 
 export default function AdminMiningSubscriptionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedSubscription, setSelectedSubscription] = useState<FullMiningSubscription | null>(null);
-  const [showCreditDebitModal, setShowCreditDebitModal] = useState(false);
+  const [showCreditDebitDepositModal, setShowCreditDebitDepositModal] = useState(false);
   const [showEarningsModal, setShowEarningsModal] = useState(false);
   const [actionType, setActionType] = useState<'credit' | 'debit'>('credit');
 
@@ -51,13 +41,7 @@ export default function AdminMiningSubscriptionsPage() {
     }
   }, [subscriptions]);
 
-  const toggleStatusMutation = useApiMutation(
-    ({ id, isActive }: { id: number; isActive: boolean }) =>
-      miningSubscriptionService.updateSubscription(id, {  }),
-    {
-      invalidateQueries: [['admin-mining-subscriptions']],
-    }
-  );
+
 
   const toggleAutoUpdateMutation = useApiMutation(
     ({ id, shouldUpdateAutomatically }: { id: number; shouldUpdateAutomatically: boolean }) =>
@@ -72,9 +56,7 @@ export default function AdminMiningSubscriptionsPage() {
     setSortDirection(direction);
   };
 
-  const handleToggleStatus = async (id: number, currentStatus: boolean) => {
-    await toggleStatusMutation.mutateAsync({ id, isActive: !currentStatus });
-  };
+
 
   const handleToggleAutoUpdate = async (id: number, currentStatus: boolean) => {
     await toggleAutoUpdateMutation.mutateAsync({ 
@@ -83,16 +65,18 @@ export default function AdminMiningSubscriptionsPage() {
     });
   };
 
-  const handleCreditDebit = (subscription: FullMiningSubscription, type: 'credit' | 'debit') => {
+  const handleCreditDebitDeposit = (subscription: FullMiningSubscription, type: 'credit' | 'debit') => {
     setSelectedSubscription(subscription);
     setActionType(type);
-    setShowCreditDebitModal(true);
+    setShowCreditDebitDepositModal(true);
   };
 
-  const handleUpdateEarnings = (subscription: FullMiningSubscription) => {
+    const handleAddEarning = (subscription: FullMiningSubscription) => {
     setSelectedSubscription(subscription);
     setShowEarningsModal(true);
   };
+
+
 
   const sortedSubscriptions = [...subscriptions].sort((a, b) => {
     const aValue = a[sortKey as keyof FullMiningSubscription] as string | number | boolean | MiningContract;
@@ -170,21 +154,22 @@ export default function AdminMiningSubscriptionsPage() {
         </span>
       ),
     },
-    {
-      key: 'earnings',
-      label: 'Earnings',
-      sortable: true,
-      mobilePriority: 4,
-      render: (value: number, row: FullMiningSubscription) => {
-        // Debug: Log individual earnings
-        console.log(`Earnings for subscription ${row.id}:`, value);
-        return (
-          <span className="font-semibold text-green-600">
-            {formatCurrency(value || 0)}
-          </span>
-        );
-      },
-    },
+{
+  key: 'earnings',
+  label: 'Earnings',
+  sortable: true,
+  mobilePriority: 4,
+  render: (_: any, row: FullMiningSubscription) => {
+    const total = row.earnings?.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) || 0;
+
+    return (
+      <span className="font-semibold text-green-600">
+        {formatCurrency(total)}
+      </span>
+    );
+  },
+},
+
     {
       key: 'shouldUpdateAutomatically',
       label: 'Auto Update',
@@ -206,27 +191,7 @@ export default function AdminMiningSubscriptionsPage() {
         </div>
       ),
     },
-    {
-      key: 'isActive',
-      label: 'Status',
-      sortable: true,
-      render: (value: boolean, row: FullMiningSubscription) => (
-        <div className="flex items-center space-x-2">
-          <Badge variant={value ? 'secondary' : 'default'}>
-            {value ? 'Active' : 'Inactive'}
-          </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleToggleStatus(row.id, value)}
-            className="h-6 text-xs"
-            disabled={toggleStatusMutation.isPending}
-          >
-            {value ? 'Deactivate' : 'Activate'}
-          </Button>
-        </div>
-      ),
-    },
+
     {
       key: 'actions',
       label: 'Actions',
@@ -238,29 +203,34 @@ export default function AdminMiningSubscriptionsPage() {
                 View
               </Button>
             </Link>
-            <Link href={`/admin/subscriptions/edit/${row.id}`}>
-              <Button variant="outline" size="sm">
-                Edit
-              </Button>
-            </Link>
-          </div>
-          <div className="flex space-x-2">
-            <Button 
+              <Button 
               variant="outline" 
               size="sm"
               className="text-green-600 hover:text-green-700"
-              onClick={() => handleCreditDebit(row, 'credit')}
+              onClick={() => handleAddEarning(row)}
             >
-              Credit
+              Credit Earnings
             </Button>
+        
+          </div>
+          <div className="flex space-x-2">
+         
+              <Button
+                   onClick={() => handleCreditDebitDeposit(row, 'credit')}
+              className="text-white hover:text-green-700"
+            size="sm">
+                Credit Amount Deposited
+              </Button>
+            
             <Button 
               variant="outline" 
               size="sm"
               className="text-orange-600 hover:text-orange-700"
-              onClick={() => handleCreditDebit(row, 'debit')}
+              onClick={() => handleCreditDebitDeposit(row, 'debit')}
             >
-              Debit
+              Debit Amount Deposited
             </Button>
+              
           </div>
         </div>
       ),
@@ -332,21 +302,35 @@ export default function AdminMiningSubscriptionsPage() {
       </Card>
 
       {/* Credit/Debit Modal */}
-      {showCreditDebitModal && selectedSubscription && (
-        <CreditDebitModal
+      {showCreditDebitDepositModal && selectedSubscription && (
+        <CreditDebitDepositModal
           subscription={selectedSubscription}
           actionType={actionType}
-          isOpen={showCreditDebitModal}
+          isOpen={showCreditDebitDepositModal}
           onClose={() => {
-            setShowCreditDebitModal(false);
+            setShowCreditDebitDepositModal(false);
             setSelectedSubscription(null);
           }}
           onSuccess={() => {
-            setShowCreditDebitModal(false);
+            setShowCreditDebitDepositModal(false);
             setSelectedSubscription(null);
             refetch();
           }}
         />
+      )}
+      {showEarningsModal && (
+        <EarningModal 
+        isOpen={showEarningsModal}
+        onClose={()=>{
+          setShowEarningsModal(false)
+          setSelectedSubscription(null)
+        }}
+          onSuccess={()=>{
+          setShowEarningsModal(false)
+          setSelectedSubscription(null)
+          refetch()
+        }}
+        subscription={selectedSubscription as MiningSubscriptionWithMiner } />
       )}
     </div>
   );

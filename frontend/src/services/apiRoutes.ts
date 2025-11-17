@@ -105,6 +105,7 @@ export const API_ROUTES = {
     updateEarnings: (id: number) => `/subscriptions/${id}/earnings`,
     deactivate: (id: number) => `/subscriptions/${id}/deactivate`,
     processDailyEarnings: '/subscriptions/process-daily-earnings',
+    deposit:(id:number)=>`/subscriptions/deposit/${id}`
   },
 
   // Transaction Routes

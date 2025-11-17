@@ -1,40 +1,77 @@
 
-import { EarningAttributes, EarningCreationAttributes } from '../models/Earning';
+import { MiningContract, MiningSubscription } from '../models';
+import { EarningAttributes} from '../models/Earning';
+import EarningStatus from '../models/EarningStatus';
+import { MiningSubscriptionRepository } from '../repositories';
 import { EarningRepository } from '../repositories/EarningRepository';
-import { AppError, BaseService, NotFoundError } from './utils';
+import { AppError, BaseService, logger, NotFoundError } from './utils';
 
-
+export interface MiningSubscriptionWithMiner extends MiningSubscription{
+  miningContract:MiningContract
+}
 
 
 export class EarningService extends BaseService {
   private earningRepository: EarningRepository;
+  private subscriptionRepository:MiningSubscriptionRepository
 
   constructor() {
     super('EarningService');
     this.earningRepository = new EarningRepository();
-  }
-   async createEarning(data:EarningCreationAttributes){
-    try{
-      await this.earningRepository.create(data)
-    }catch(error){
-    this.handleError(error)
-   }
+    this.subscriptionRepository = new MiningSubscriptionRepository()
   }
 
-  async getAllBySubscripitionId(id:string): Promise<EarningAttributes[]> {
+async processDailyEarnings() {
+  // Fetch only subscriptions that should update automatically
+  const subscriptions = await this.subscriptionRepository.findAll({
+    where: { shouldUpdateAutomatically: true },
+    include: [
+      {
+        model: MiningContract,
+        as: 'miningContract'
+      }
+    ]
+  }) as MiningSubscriptionWithMiner[];
+
+  if (!subscriptions.length) {
+    logger.info("No subscriptions eligible for daily earnings.");
+    return;
+  }
+
+  for (const sub of subscriptions) {
     try {
-      this.logInfo('Fetching all earnings');
-      const earnings = await this.earningRepository.findAll({
-        where:{miningSubscriptionId:id},
-        order: [['createdA', 'ASC']],
+      const contract = sub.miningContract;
+      if (!contract) {
+        logger.error(`No mining contract found for subscription ${sub.id}`);
+        continue;
+      }
+
+      const dailyPercentage = this.getDailyPercentage(contract);
+
+      // Daily earning formula
+      const dailyEarning = sub.amountDeposited * (dailyPercentage / 100);
+
+      // Save earning
+      await this.earningRepository.create({
+        miningSubscriptionId: sub.id,
+        amount: dailyEarning,
+        date: new Date()
+       
       });
-      return earnings.map(earning => earning.get({ plain: true }));
-    } catch (error) {
-      this.handleError(error, 'Failed to fetch earnings');
+
+      
+
+      logger.info(
+        `Daily earning created for subscription ${sub.id}: $${dailyEarning}`
+      );
+    } catch (err) {
+      logger.error(`Error processing subscription ${sub.id}`, err);
     }
   }
-
-
+  const status =await EarningStatus.findOne()
+  status.dateOfLastUpdate= new Date()
+  await status.save()
+}
 
   async updateEarning(id: number, updateData: any): Promise<EarningAttributes> {
     try {
@@ -65,6 +102,7 @@ export class EarningService extends BaseService {
       if (!earning) {
         throw new NotFoundError('Earning');
       }
+      
 
       await this.earningRepository.deleteById(id);
 
@@ -73,6 +111,21 @@ export class EarningService extends BaseService {
       this.handleError(error, 'Failed to delete earning');
     }
   }
+private getDailyPercentage(contract: MiningContract): number {
+  // periodReturn example: 10 (meaning 10% per period)
+  const periodReturn = contract.periodReturn;
+
+  // Convert each period into its number of days
+  const daysInPeriod = {
+    daily: 1,
+    weekly: 7,
+    fortnightly: 14,
+    monthly: 30
+  }[contract.period];
+
+  // DAILY percentage = period return / days
+  return periodReturn / daysInPeriod;
+}
 
 
 }

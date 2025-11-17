@@ -3,7 +3,8 @@ import { MiningSubscriptionService } from '../services';
 import { BaseController } from './BaseController';
 import { validateData } from '../services/utils/helpers/validation';
 import { z } from 'zod';
-import { MiningSubscription } from '../models';
+import { Earning, MiningSubscription, Transaction } from '../models';
+import { BadRequestError } from '../services/utils';
 
 
 
@@ -33,7 +34,7 @@ export class MiningSubscriptionController extends BaseController {
       return this.handleError(error, res, 'Failed to create mining subscription');
     }
   };
-
+  
   getAllSubscriptions = async (req: Request, res: Response): Promise<Response | void> => {
     try {
    
@@ -70,20 +71,6 @@ export class MiningSubscriptionController extends BaseController {
     }
   };
 
-  updateEarnings = async (req: Request, res: Response): Promise<Response | void> => {
-    try {
-   
-      
-      const subscriptionId = parseInt(req.params.id);
-      const validatedData =validateData(updateEarningsSchema, req.body);
-      
-      const subscription = await this.miningSubscriptionService.updateEarnings(subscriptionId, req.body);
-      
-      return this.success(res, 'Earnings updated successfully', subscription);
-    } catch (error) {
-      return this.handleError(error, res, 'Failed to update earnings');
-    }
-  };
 
   updateSubscription = async (req: Request, res: Response): Promise<Response | void> => {
     try {
@@ -100,19 +87,40 @@ export class MiningSubscriptionController extends BaseController {
       return this.handleError(error, res, 'Failed to update earnings');
     }
   };
-
-  calculateEarnings = async (req: Request, res: Response): Promise<Response | void> => {
+    mutateDeposit = async (req: Request, res: Response): Promise<Response | void> => {
     try {
-      const subscriptionId = parseInt(req.params.id);
-      const days = parseInt(req.query.days as string) || 1;
+   console.log(req.body)
+   const {amount, actionType, shouldSendEmail, shouldCreateTransaction,depositStatus} = req.body
       
-      const earnings = await this.miningSubscriptionService.calculateEarnings(subscriptionId, days);
+      const id = parseInt(req.params.id);
+     
       
-      return this.success(res, 'Earnings calculated successfully', { earnings });
+      const subscription = await MiningSubscription.findByPk(id)
+      if(actionType==='credit'){
+        subscription.amountDeposited+=amount
+      }else if (actionType==='debit'){
+        subscription.amountDeposited-=amount
+      }else{
+        throw new BadRequestError('invalid transaction action type.')
+      }
+      subscription.depositStatus = depositStatus
+      await subscription.save()
+
+      if(shouldCreateTransaction){
+        await Transaction.create({amountInUSD:amount,entity:'subscription',entityId: subscription.id,minerId:subscription.minerId})
+      }
+      if (shouldSendEmail){
+
+      }
+ 
+      
+      return this.success(res, 'Earnings updated successfully', subscription);
     } catch (error) {
-      return this.handleError(error, res, 'Failed to calculate earnings');
+      return this.handleError(error, res, 'Failed to update earnings');
     }
   };
+
+
 
   getMinerDashboard = async (req: Request, res: Response): Promise<Response | void> => {
     try {
@@ -141,15 +149,5 @@ export class MiningSubscriptionController extends BaseController {
     }
   };
 
-  processDailyEarnings = async (req: Request, res: Response): Promise<Response | void> => {
-    try {
-   
-      
-      await this.miningSubscriptionService.processDailyEarnings();
-      
-      return this.success(res, 'Daily earnings processed successfully');
-    } catch (error) {
-      return this.handleError(error, res, 'Failed to process daily earnings');
-    }
-  };
+
 }

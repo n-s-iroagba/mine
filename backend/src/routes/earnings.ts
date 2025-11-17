@@ -8,10 +8,10 @@ const earningController = new EarningController();
 
 
 // GET /api/earnings/subscription/:subscriptionId - Get earnings by subscription ID
-router.get('/subscription/:subscriptionId', earningController.getEarningsBySubscriptionId);
+router.get('/process-daily', earningController.processDailyEarnings);
 
 // POST /api/earnings - Create new earning (admin only)
-router.post('/', earningController.createEarning);
+router.post('/', earningController.createEarnings);
 
 // PATCH /api/earnings/:id - Update earning (admin only)
 router.patch('/:id', earningController.updateEarning);

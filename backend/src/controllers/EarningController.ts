@@ -1,119 +1,123 @@
 // controllers/EarningController.ts
 import { Request, Response } from 'express';
-
 import { AppError, ValidationError } from '../services/utils';
 import { EarningService } from '../services/EarningService';
+import { MiningSubscriptionService } from '../services/MiningSubscriptionService';
+import { Earning } from '../models';
+
 
 export class EarningController {
   private earningService: EarningService;
+  private miningSubscriptionService: MiningSubscriptionService;
 
   constructor() {
     this.earningService = new EarningService();
+    this.miningSubscriptionService = new MiningSubscriptionService();
   }
 
-  createEarning = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const earningData = req.body;
-      
-      // Validate required fields
-      if (!earningData.miningSubscriptionId || !earningData.amount || !earningData.date) {
-        throw new ValidationError('miningSubscriptionId, amount, and date are required');
-      }
 
-      const earning = await this.earningService.createEarning(earningData);
-      
-      res.status(201).json({
-        success: true,
-        data: earning,
-        message: 'Earning created successfully'
-      });
-    } catch (error) {
-      this.handleError(res, error, 'Failed to create earning');
+createEarnings = async (req: Request, res: Response) => {
+  try {
+    console.log("Incoming Body:", req.body);
+
+    const {
+      miningSubscriptionId,
+      amount,
+      date,
+      shouldSendEmail
+    } = req.body;
+
+    const newEarning = await Earning.create({
+      miningSubscriptionId,
+      amount,
+      date
+    });
+
+    if (shouldSendEmail) {
+      // send email logic here
     }
-  };
 
-  getEarningsBySubscriptionId = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { subscriptionId } = req.params;
-      
-      if (!subscriptionId) {
-        throw new ValidationError('Subscription ID is required');
-      }
+    return this.success(res, 'Earning created successfully', newEarning);
+  } catch (error) {
+    return this.handleError(error, res, 'Failed to create earning');
+  }
+};
 
-      const earnings = await this.earningService.getAllBySubscripitionId(subscriptionId);
-      
-      res.status(200).json({
-        success: true,
-        data: earnings,
-        message: 'Earnings fetched successfully'
-      });
-    } catch (error) {
-      this.handleError(res, error, 'Failed to fetch earnings');
-    }
-  };
+  processDailyEarnings = async  (req: Request, res: Response) => {
 
-  updateEarning = async (req: Request, res: Response): Promise<void> => {
+    try{
+      await this.earningService.processDailyEarnings()
+            return this.success(res, 'Earnings success fully updated');
+
+    }catch(error){
+       return this.handleError(error, res, 'Failed process daily earings');
+  }
+  }
+
+  updateEarning = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const {updateData, shouldSendEmail} = req.body;
 
-      if (!id) {
-        throw new ValidationError('Earning ID is required');
-      }
+      if (!id) throw new ValidationError('Earning ID is required');
 
       const earningId = parseInt(id, 10);
-      if (isNaN(earningId)) {
-        throw new ValidationError('Invalid earning ID');
+      if (isNaN(earningId)) throw new ValidationError('Invalid earning ID');
+
+      const updatedEarning = await this.earningService.updateEarning(
+        earningId,
+        updateData
+      );
+      if (shouldSendEmail){
+
       }
 
-      const updatedEarning = await this.earningService.updateEarning(earningId, updateData);
-      
       res.status(200).json({
         success: true,
         data: updatedEarning,
         message: 'Earning updated successfully'
       });
     } catch (error) {
-      this.handleError(res, error, 'Failed to update earning');
+      this.handleError(error, res, 'Failed to update earning');
     }
   };
 
-  deleteEarning = async (req: Request, res: Response): Promise<void> => {
+  deleteEarning = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
 
-      if (!id) {
-        throw new ValidationError('Earning ID is required');
-      }
+      if (!id) throw new ValidationError('Earning ID is required');
 
       const earningId = parseInt(id, 10);
-      if (isNaN(earningId)) {
-        throw new ValidationError('Invalid earning ID');
-      }
+      if (isNaN(earningId)) throw new ValidationError('Invalid earning ID');
 
       await this.earningService.deleteEarning(earningId);
-      
+
       res.status(200).json({
         success: true,
         message: 'Earning deleted successfully'
       });
     } catch (error) {
-      this.handleError(res, error, 'Failed to delete earning');
+      this.handleError(error, res, 'Failed to delete earning');
     }
   };
 
-  private handleError(res: Response, error: any, defaultMessage: string): void {
+  private success(res: Response, message: string, data: any = null) {
+    return res.status(200).json({ success: true, message, data });
+  }
+
+  private handleError(error: any, res: Response, defaultMessage: string) {
     if (error instanceof AppError) {
-      res.status(error.statusCode || 400).json({
+      return res.status(error.statusCode || 400).json({
         success: false,
         message: error.message
       });
-    } else {
-      console.error('EarningController error:', error);
-      res.status(500).json({
-        success: false,
-        message: defaultMessage
-      });
     }
+
+    console.error('EarningController error:', error);
+    return res.status(500).json({
+      success: false,
+      message: defaultMessage
+    });
   }
 }

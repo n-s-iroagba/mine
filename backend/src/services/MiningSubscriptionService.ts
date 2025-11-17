@@ -173,49 +173,7 @@ export class MiningSubscriptionService extends BaseService {
     }
   }
 
-  async processDailyEarnings(): Promise<void> {
-    try {
-      this.logInfo('Processing daily earnings for all active subscriptions');
 
-      const activeSubscriptions = await this.miningSubscriptionRepository.findAll({
-        where: { amountDeposited:{ [Op.gt]:0}, shouldUpdateAutomatically: true },
-        include: ['miningContract'],
-      }) as FullSubscriptionDetails[];
-
-      let processedCount = 0;
-
-      for (const subscription of activeSubscriptions) {
-        try {
-          const miningContract = subscription.miningContract;
-          if (!miningContract) continue;
-
-          const dailyEarnings = CalculationHelper.calculateEarnings(
-            subscription.amountDeposited,
-            miningContract.periodReturn,
-            miningContract.period,
-            1
-          );
-          await this.earningRepository.create({
-            amount:dailyEarnings,
-            miningSubscriptionId:subscription.id,
-            date:new Date()
-
-          })
-          const newEarnings = subscription.totalEarnings + dailyEarnings;
-
-          await this.miningSubscriptionRepository.updateEarnings(subscription.id, newEarnings);
-          processedCount++;
-
-        } catch (error) {
-          this.logError(`Failed to process earnings for subscription ${subscription.id}`, error);
-        }
-      }
-
-      this.logInfo('Daily earnings processing completed', { processedCount, total: activeSubscriptions.length });
-    } catch (error) {
-      this.handleError(error, 'Failed to process daily earnings');
-    }
-  }
 
   async getMinerDashboard(minerId: number): Promise<any> {
     try {

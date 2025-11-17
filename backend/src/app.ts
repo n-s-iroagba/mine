@@ -9,6 +9,7 @@ import { errorHandler } from './middlewares/errorHandler';
 import sequelize from './config/database';
 import { requestLogger } from './middlewares/requestLogger';
 import { MiningSubscription } from './models';
+import EarningStatus from './models/EarningStatus';
 
 
 const app = express();
@@ -92,13 +93,16 @@ const startServer = async () => {
     // for(const sub of subs){
     //   sub.destroy()
     // }
-    // Sync models with atabase
+    const force = false
     if (process.env.NODE_ENV !== 'production') {
-      await sequelize.sync(); // Use { force: true } to drop and recreate tables
+      await sequelize.sync({force}); // Use { force: true } to drop and recreate tables
       console.log('✅ Database synced successfully.');
     } else {
-      await sequelize.sync(); // Safe sync for production
+      await sequelize.sync({force}); // Safe sync for production
       console.log('✅ Database synced successfully.');
+    }
+    if(force){
+      await EarningStatus.create({dateOfLastUpdate:new Date()})
     }
 
     // Start server

@@ -1,4 +1,4 @@
-import { MiningContract, MiningSubscription, Transaction } from '../models';
+import { Earning, MiningContract, MiningSubscription, Transaction } from '../models';
 import Miner from '../models/Miner';
 import { BaseRepository } from './BaseRepository';
 
@@ -39,6 +39,11 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
             association: 'miningContract',
             include: ['miningServer'],
           },
+                {
+            model: Earning,
+            as: 'earnings',
+         
+          },
           {
             model: Transaction,
             as: 'transactions',
@@ -71,7 +76,13 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
 
             },
             required: false,
-          }, {
+          },
+             {
+            model: Earning,
+            as: 'earnings',
+         
+          },
+          {
             association: 'miner',
         
          
@@ -101,6 +112,11 @@ export class MiningSubscriptionRepository extends BaseRepository<MiningSubscript
               minerId: minerId
             },
             required: false,
+          },
+                {
+            model: Earning,
+            as: 'earnings',
+         
           },
           {
             model: Miner,

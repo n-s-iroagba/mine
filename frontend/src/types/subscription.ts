@@ -1,4 +1,4 @@
-import { Transaction } from "./api";
+import { Earning, Miner, MiningContract, Transaction } from "./api";
 
 export enum DepositStatus {
   NO_DEPOSIT = "no deposit",
@@ -20,10 +20,19 @@ export interface MiningSubscription {
   depositStatus: DepositStatus;
   createdAt: Date;
   updatedAt: Date;
-miner:any
+
 }
 export interface MiningSubscriptionWithTransactions extends MiningSubscription{
   transactions:Transaction[]
+}
+export interface FullMiningSubscription extends MiningSubscription {
+  miner: Miner
+  miningContract?:MiningContract
+  earnings: Earning[]; // Ensure earnings is explicitly defined
+}
+
+export interface MiningSubscriptionWithMiner extends MiningSubscription{
+  miner:Miner
 }
 
 export interface MiningSubscriptionCreationDto extends Omit<MiningSubscription, 'id' | 'shouldUpdateAutomatically' | 'earnings' | 'isActive' | 'createdAt' | 'updatedAt'|'amountDeposited'> {}

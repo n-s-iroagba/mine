@@ -9,14 +9,14 @@ const miningSubscriptionController = new MiningSubscriptionController();
 router.get('/miner/:minerId',  miningSubscriptionController.getSubscriptionsByMinerId);
 router.get('/miner/:minerId/dashboard',  miningSubscriptionController.getMinerDashboard);
 router.get('/:id', miningSubscriptionController.getSubscriptionById);
-router.get('/:id/calculate-earnings', miningSubscriptionController.calculateEarnings);
+router.patch('/deposit/:id',miningSubscriptionController.mutateDeposit)
+
 
 // Admin only routes
 router.get('/',   miningSubscriptionController.getAllSubscriptions);
 router.post('/:minerId',   miningSubscriptionController.createSubscription);
 router.patch('/:id',miningSubscriptionController.updateSubscription)
-router.patch('/:id/earnings',   miningSubscriptionController.updateEarnings);
 router.patch('/:id/deactivate',   miningSubscriptionController.deactivateSubscription);
-router.post('/process-daily-earnings',   miningSubscriptionController.processDailyEarnings);
+
 
 export default router;

@@ -5,23 +5,13 @@ import {
   UpdateEarningsData,
   MinerDashboard,
   ApiResponse,
+  Earning,
 
 
 
 } from '../types/api';
-import { MiningSubscription, MiningSubscriptionWithTransactions } from '@/types/subscription';
-interface FullMiningSubscription extends MiningSubscription {
-  miner: {
-    firstname: string;
-    lastname: string;
-    country: string;
-  };
-  miningContract?: {
-    periodReturn: number;
-    period: string;
-  };
-  earnings: number; // Ensure earnings is explicitly defined
-}
+import { DepositStatus, FullMiningSubscription, MiningSubscription, MiningSubscriptionWithTransactions } from '@/types/subscription';
+
 export const miningSubscriptionService = {
   // ✅ Get all subscriptions (admin only)
   async getAllSubscriptions(): Promise<FullMiningSubscription[]> {
@@ -68,19 +58,17 @@ export const miningSubscriptionService = {
     if (response.success && response.data) return response.data;
     throw new Error(response.message);
   },
-
-  // ✅ Update earnings (admin only)
-  async updateEarnings(id: number, data: UpdateEarningsData): Promise<MiningSubscriptionWithTransactions> {
+  async mutateDeposit(id: number, data:{amount:number,shouldSendEmail:boolean,shouldCreateTransaction:boolean,actionType:'credit'|'debit',depositStatus:DepositStatus}): Promise<MiningSubscriptionWithTransactions> {
     const response = await apiService.patch<ApiResponse<MiningSubscriptionWithTransactions>>(
-      API_ROUTES.subscriptions.updateEarnings(id),
+      API_ROUTES.subscriptions.deposit(id),
       data
     );
     if (response.success && response.data) return response.data;
     throw new Error(response.message);
   },
 
-  // ✅ Update subscription (toggle active or auto-update)
-  async updateSubscription(id: number, data: Partial<MiningSubscription>): Promise<MiningSubscriptionWithTransactions> {
+
+    async updateSubscription(id: number, data: Partial<MiningSubscription>): Promise<MiningSubscriptionWithTransactions> {
     const response = await apiService.patch<ApiResponse<MiningSubscriptionWithTransactions>>(
       API_ROUTES.subscriptions.update(id),
       data
@@ -88,6 +76,7 @@ export const miningSubscriptionService = {
     if (response.success && response.data) return response.data;
     throw new Error(response.message);
   },
+
 
 
   // ✅ Delete subscription (admin only)

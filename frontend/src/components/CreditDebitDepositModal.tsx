@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { miningSubscriptionService } from '@/services';
+import { DepositStatus } from '@/types/subscription';
 
-interface CreditDebitModalProps {
+interface CreditDebitDepositModalProps {
   subscription: any;
   actionType: 'credit' | 'debit';
   isOpen: boolean;
@@ -14,14 +15,17 @@ interface CreditDebitModalProps {
   onSuccess: () => void;
 }
 
-export function CreditDebitModal({ 
+export function CreditDebitDepositModal({ 
   subscription, 
   actionType, 
   isOpen, 
   onClose, 
   onSuccess 
-}: CreditDebitModalProps) {
-  const [amount, setAmount] = useState('');
+}: CreditDebitDepositModalProps) {
+  const [amount, setAmount] = useState(0);
+  const [shouldSendEmail, setShouldSendEmail] = useState(false)
+  const [depositStatus, setDepositStatus] = useState<DepositStatus>(subscription.depositStatus)
+  const [shouldCreateTransaction, setShouldCreateTransaction] = useState(false)
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,25 +34,15 @@ export function CreditDebitModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const numericAmount = parseFloat(amount);
-    if (!numericAmount || numericAmount <= 0) {
-      setError('Please enter a valid amount greater than 0');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
+  
 
     try {
       if (actionType === 'credit') {
-        await miningSubscriptionService.updateEarnings(subscription.id, {earnings:numericAmount,actionType:'credit'});
-      } else {
-        if (numericAmount > subscription.amountDeposited) {
-          setError('Debit amount cannot exceed current deposited amount');
-          setIsLoading(false);
-          return;
-        }
-        await miningSubscriptionService.updateEarnings(subscription.id, {earnings:numericAmount,actionType:'debit'});
+        await miningSubscriptionService.mutateDeposit(subscription.id, {amount,actionType:'credit',shouldSendEmail,shouldCreateTransaction,depositStatus});
+      } else if(actionType==='debit') {
+        await miningSubscriptionService.mutateDeposit(subscription.id, {amount,actionType:'debit',shouldSendEmail, shouldCreateTransaction,depositStatus});
+      }else{
+        alert('Choose a transaction type')
       }
       onSuccess();
     } catch (err) {
@@ -90,11 +84,88 @@ export function CreditDebitModal({
                 step="0.01"
                 min="0"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(Number(e.target.value))}
                 placeholder="Enter amount"
                 required
               />
             </div>
+<div>
+  <Label className="block mb-1">Should send Email?</Label>
+
+  <div className="flex items-center gap-4 mt-1">
+    <label className="flex items-center gap-2">
+      <input
+        type="radio"
+        name="shouldSendEmail"
+        value="yes"
+        checked={shouldSendEmail === true}
+        onChange={() => setShouldSendEmail(true)}
+      />
+      Yes
+    </label>
+
+    <label className="flex items-center gap-2">
+      <input
+        type="radio"
+        name="shouldSendEmail"
+        value="no"
+        checked={shouldSendEmail === false}
+        onChange={() => setShouldSendEmail(false)}
+      />
+      No
+    </label>
+  </div>
+</div>
+
+<div>
+  <Label className="block mb-1">Should the miner be able to see this transaction?</Label>
+
+  <div className="flex items-center gap-4 mt-1">
+    <label className="flex items-center gap-2">
+      <input
+        type="radio"
+        name="shouldCreateTransaction"
+        value="yes"
+        checked={shouldCreateTransaction === true}
+        onChange={() => setShouldCreateTransaction(true)}
+      />
+      Yes
+    </label>
+
+    <label className="flex items-center gap-2">
+      <input
+        type="radio"
+        name="shouldCreateTransaction"
+        value="no"
+        checked={shouldCreateTransaction === false}
+        onChange={() =>  setShouldCreateTransaction(false)}
+      />
+      No
+    </label>
+  </div>
+
+</div>
+<div>
+  <Label className="block mb-1">Deposit Status</Label>
+
+  <select
+    className="border rounded-md p-2 w-full"
+    value={depositStatus}
+    onChange={(e) => setDepositStatus(e.target.value as DepositStatus)}
+  >
+    {Object.values(DepositStatus).map((status) => (
+      <option key={status} value={status}>
+        {status}
+      </option>
+    ))}
+  </select>
+
+  <p className="text-xs text-gray-500 mt-1">
+    Leave unchanged or select a new status.
+  </p>
+</div>
+
+
 
             {error && (
               <p className="text-sm text-red-600">{error}</p>
@@ -112,7 +183,7 @@ export function CreditDebitModal({
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                variant={actionType === 'credit' ? 'default' : 'destructive'}
+                variant='default'
               >
                 {isLoading ? 'Processing...' : `${actionType === 'credit' ? 'Credit' : 'Debit'} Deposit`}
               </Button>

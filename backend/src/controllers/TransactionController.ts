@@ -103,7 +103,7 @@ export class TransactionController extends BaseController {
   };
 
   updateTransactionStatus = async (req: Request, res: Response): Promise<Response | void> => {
-    console.log('qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq')
+
     try {
    
       

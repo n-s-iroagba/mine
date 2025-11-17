@@ -348,7 +348,8 @@ export interface Earning {
 export interface EarningCreationAttributes {
   miningSubscriptionId: number;
   amount: number;
-  date: string; // ISO string format or Date object that will be serialized
+  date: string; 
+  shouldSendEmail:boolean
 }
 
 export interface EarningUpdateAttributes {
