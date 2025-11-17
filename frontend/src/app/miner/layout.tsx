@@ -42,6 +42,7 @@ export default function MinerLayout({
   const navigation = [
     { name: 'Dashboard', href: '/miner/dashboard', icon: '📊' },
     { name: 'My Subscriptions', href: '/miner/contracts', icon: '📋' },
+     { name: 'My Transactions', href: '/miner/transactions', icon: '📋' },
        { name: 'Withdraw', href: '/miner/withdraw', icon: '💳' },
     { name: 'My Transactions', href: '/miner/payments', icon: '💳' },
     { name: 'KYC Verification', href: '/miner/kyc', icon: '✅' },

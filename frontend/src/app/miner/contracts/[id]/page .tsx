@@ -29,12 +29,9 @@ export default function MiningSubscriptionDetailsPage() {
   const params = useParams();
   const id = parseInt(params.id as string);
 
-  const [updateError, setUpdateError] = useState('');
+
   const [updateLoading, setUpdateLoading] = useState(false);
 
-  const [showCreditDebitDepositModal, setShowCreditDebitDepositModal] = useState(false);
-  const [showEarningsModal, setShowEarningsModal] = useState(false);
-  const [editingEarning, setEditingEarning] = useState<Earning | undefined>(undefined);
 
   const [actionType, setActionType] = useState<'credit' | 'debit'>('credit');
 
@@ -50,20 +47,7 @@ export default function MiningSubscriptionDetailsPage() {
   if (error || !subscription)
     return <div className="p-10 text-center text-red-600">Failed to load subscription</div>;
 
-  // ========== UPDATE AUTO UPDATE ===========
-  const updateAutomaticUpdate = async () => {
-    try {
-      setUpdateLoading(true);
-      await miningSubscriptionService.updateSubscription(subscription.id, {
-        shouldUpdateAutomatically: !subscription.shouldUpdateAutomatically
-      });
-      await refetch();
-    } catch (err) {
-      setUpdateError('Error toggling automatic update');
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
+
     const formatMinerName = (miner: any) => {
     if (!miner) return 'Unknown Miner';
     return `${miner.firstname} ${miner.lastname}`;
@@ -115,16 +99,7 @@ const chartData = earnings
       amount: runningTotal, // cumulative amount
     };
   });
-  const handleCreditDebitDeposit = ( type: 'credit' | 'debit') => {
-   
-    setActionType(type);
-    setShowCreditDebitDepositModal(true);
-  };
 
-    const handleAddEarning = () => {
-   
-    setShowEarningsModal(true);
-  };
 
 
   return (
@@ -161,22 +136,7 @@ const chartData = earnings
           </CardContent>
         </Card>
 
-        {/* Auto update */}
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-gray-600 text-sm mb-2">Auto Update</p>
-            <div onClick={updateAutomaticUpdate}>
-              <Badge>
-                {updateLoading
-                  ? 'Updating...'
-                  : subscription.shouldUpdateAutomatically
-                  ? 'Enabled'
-                  : 'Disabled'}
-              </Badge>
-            </div>
-            {updateError && <p className="text-red-600 text-sm">{updateError}</p>}
-          </CardContent>
-        </Card>
+    
 
       </div>
 
@@ -209,9 +169,7 @@ const chartData = earnings
           <CardTitle>Earnings</CardTitle>
         </CardHeader>
         <CardContent>
-          <Button size="sm" onClick={() => { setEditingEarning(undefined); setShowEarningsModal(true); }}>
-            Add Earning
-          </Button>
+     
 
           {earnings.length === 0 ? (
             <p className="text-gray-500 mt-4">No earnings added yet.</p>
@@ -229,27 +187,9 @@ const chartData = earnings
                     </p>
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingEarning(e);
-                        setShowEarningsModal(true);
-                      }}
-                    >
-                      Edit
-                    </Button>
+              
 
-                    <Button
-                      variant="outline"
-                      className='text-red-700'
-                      size="sm"
-                      onClick={() => deleteEarning(e.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
+               
                 </div>
               ))}
             </div>
@@ -434,38 +374,8 @@ const chartData = earnings
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-          <div className="flex space-x-2">
-          
-              <Button 
-              variant="outline" 
-              size="sm"
-              className="text-green-600 hover:text-green-700"
-              onClick={() => handleAddEarning()}
-            >
-              Credit Earnings
-            </Button>
-        
-          </div>
-          <div className="flex space-x-2">
-         
-              <Button
-                   onClick={() => handleCreditDebitDeposit( 'credit')}
-              className="text-white hover:text-green-700"
-            size="sm">
-                Credit Amount Deposited
-              </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="text-orange-600 hover:text-orange-700"
-              onClick={() => handleCreditDebitDeposit('debit')}
-            >
-              Debit Amount Deposited
-            </Button>
-              
-          </div>
-            <Link href={`/admin/transactions/${subscription.id}`}>
+    
+            <Link href={`/miner/transactions/${subscription.id}`}>
               <Button variant="outline">
                 View All Transactions
               </Button>
@@ -476,36 +386,7 @@ const chartData = earnings
           </div>
         </CardContent>
       </Card>
-            {showCreditDebitDepositModal && subscription && (
-              <CreditDebitDepositModal
-                subscription={subscription}
-                actionType={actionType}
-                isOpen={showCreditDebitDepositModal}
-                onClose={() => {
-                  setShowCreditDebitDepositModal(false);
             
-                }}
-                onSuccess={() => {
-                  setShowCreditDebitDepositModal(false);
-                 
-                  refetch();
-                }}
-              />
-            )}
-            {showEarningsModal && (
-              <EarningModal 
-              isOpen={showEarningsModal}
-              onClose={()=>{
-                setShowEarningsModal(false)
-               
-              }}
-                onSuccess={()=>{
-                setShowEarningsModal(false)
-               
-                refetch()
-              }}
-              subscription={subscription as MiningSubscriptionWithMiner } />
-            )}
     </div>
   )  
 }
