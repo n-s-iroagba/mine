@@ -1,5 +1,5 @@
 'use client';
-
+ 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
@@ -7,7 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { kycService, miningSubscriptionService, transactionService } from '@/services';
 import { KYCStats, TransactionStats } from '@/types/api';
-import { MiningSubscription } from '@/types/subscription';
+import { FullMiningSubscription, MiningSubscription } from '@/types/subscription';
 import { ApiError } from '@/types/api';
 import { minerService } from '@/services/minerService';
 
@@ -15,7 +15,7 @@ interface DashboardData {
   kycStats: KYCStats | null;
   transactionStats: TransactionStats | null;
   subscriptions: MiningSubscription[];
-  recentSubscriptions: MiningSubscription[];
+  recentSubscriptions: FullMiningSubscription[];
   totalMiners: number;
 }
 
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
         }
 
         // Fetch subscriptions
-        let allSubscriptions: MiningSubscription[] = [];
+        let allSubscriptions: FullMiningSubscription[] = [];
         try {
           allSubscriptions = await miningSubscriptionService.getAllSubscriptions();
         } catch (err) {
@@ -353,28 +353,7 @@ export default function AdminDashboard() {
                 </Button>
               )}
             </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${stat.error ? 'text-red-600' : ''}`}>
-                {stat.value}
-              </div>
-              <p className={`text-xs ${
-                stat.error 
-                  ? 'text-red-600' 
-                  : stat.changeType === 'positive' 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
-              }`}>
-                {stat.change}
-              </p>
-              {stat.error && stat.errorMessage && (
-                <p className="text-xs text-red-500 mt-1 truncate" title={stat.errorMessage}>
-                  {stat.errorMessage.length > 30 
-                    ? `${stat.errorMessage.substring(0, 30)}...` 
-                    : stat.errorMessage
-                  }
-                </p>
-              )}
-            </CardContent>
+      
           </Card>
         ))}
       </div>
@@ -513,12 +492,6 @@ export default function AdminDashboard() {
                 <p className="text-sm text-gray-500">Success Rate</p>
                 <p className="text-2xl font-bold text-green-600">
                   {data.transactionStats.successRate.toFixed(1)}%
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Volume</p>
-                <p className="text-2xl font-bold">
-                  ${data.transactionStats.totalVolume.toLocaleString()}
                 </p>
               </div>
               <div>
