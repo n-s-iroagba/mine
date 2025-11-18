@@ -306,7 +306,7 @@ export interface SendEmailData {
 }
 
 export interface SendBulkEmailData {
-  userIds: number[];
+  minerIds: number[];
   subject: string;
   message: string;
 }

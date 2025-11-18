@@ -2,6 +2,7 @@ import { KYCFeeRepository, UserRepository } from '../repositories';
 import { AppError, BaseService, NotFoundError, ValidationError } from './utils';
 
 import { KYCFeeAttributes } from '../models/KYCFee';
+import { MinerRepository } from '../repositories/MinerRepository';
 
 export interface CreateKYCFeeData {
   minerId: number;
@@ -11,29 +12,28 @@ export interface CreateKYCFeeData {
 export class KYCFeeService extends BaseService {
   private kycFeeRepository: KYCFeeRepository;
   private userRepository: UserRepository;
+  private minerRepository:MinerRepository
 
   constructor() {
     super('KYCFeeService');
     this.kycFeeRepository = new KYCFeeRepository();
     this.userRepository = new UserRepository();
+    this.minerRepository = new MinerRepository()
   }
 
   async createKYCFee(feeData: CreateKYCFeeData): Promise<KYCFeeAttributes> {
     try {
       this.logInfo('Creating KYC fee', { minerId: feeData.minerId, amount: feeData.amount });
 
-      this.validateRequiredFields(feeData, ['minerId', 'amount']);
+    
 
       // Validate miner exists and is a miner
-      const miner = await this.userRepository.findById(feeData.minerId);
+      const miner = await this.minerRepository.findById(feeData.minerId);
       if (!miner) {
         throw new NotFoundError('Miner');
       }
 
-      if (miner.role !== 'miner') {
-        throw new ValidationError('User is not a miner');
-      }
-
+    
       // Validate amount is positive
       if (feeData.amount <= 0) {
         throw new ValidationError('Amount must be positive');
@@ -47,7 +47,7 @@ export class KYCFeeService extends BaseService {
 
       const kycFee = await this.kycFeeRepository.create({
         ...feeData,
-        isPaid: false,
+       
       });
 
       this.logInfo('KYC fee created successfully', { feeId: kycFee.id, minerId: feeData.minerId });
@@ -108,7 +108,7 @@ export class KYCFeeService extends BaseService {
         throw new NotFoundError('KYC fee');
       }
 
-      if (kycFee.isPaid) {
+      if (kycFee.paidAt) {
         throw new ValidationError('KYC fee is already paid');
       }
 

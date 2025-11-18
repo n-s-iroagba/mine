@@ -18,7 +18,7 @@ export class MinerService extends BaseService {
     try {
       this.logInfo('Fetching all Miners');
       const miners = await this.minerRepository.findAll({
-        order: [['createdA', 'ASC']],
+        order: [['createdAt', 'ASC']],
       });
       return miners.map(Miner => Miner.get({ plain: true }));
     } catch (error) {

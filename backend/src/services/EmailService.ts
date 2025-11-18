@@ -1,5 +1,7 @@
 import { User } from '../models';
+import Miner from '../models/Miner';
 import { UserRepository } from '../repositories';
+import { MinerRepository } from '../repositories/MinerRepository';
 import { BaseService, EmailHelper, NotFoundError, ValidationError } from './utils';
 
 
@@ -10,14 +12,18 @@ export interface SendEmailData {
   html?: string; 
   message?:string // Added html option for custom templates
 }
-
+export interface MinerWithUser extends Miner{
+  user:User
+}
 export class EmailService extends BaseService {
   private userRepository: UserRepository;
+ private minerRepository:MinerRepository
   private clientUrl: string;
 
   constructor(url: string) {
     super('EmailService');
     this.userRepository = new UserRepository();
+    this.minerRepository = new MinerRepository()
     this.clientUrl = process.env.NODE_ENV==='production'? 'https://satoshivertex.com':'htpp://localhost:3000';
   }
 
@@ -32,11 +38,18 @@ export class EmailService extends BaseService {
 
       if (typeof emailData.to === 'number') {
         // If to is a user ID, get the user's email
-        const user = await this.userRepository.findById(emailData.to);
-        if (!user) {
-          throw new NotFoundError('User');
+        const miner = await this.minerRepository.findById(emailData.to,{
+          include:[
+            {
+              model:User,
+              as:'user'
+            }
+          ]
+        }) as MinerWithUser;
+        if (!miner) {
+          throw new NotFoundError('miner');
         }
-        recipientEmail = user.email;
+        recipientEmail = miner.user.email;
       } else {
         // Validate email format
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailData.to)) {
@@ -66,40 +79,64 @@ export class EmailService extends BaseService {
     }
   }
 
-  async sendBulkEmail(userIds: number[], subject: string, message: string): Promise<{ sent: number; failed: number }> {
-    try {
-      this.logInfo('Sending bulk email', { userCount: userIds.length, subject });
+async sendBulkEmail(
+  minerIds: number[], 
+  subject: string, 
+  message: string
+): Promise<{ sent: number; failed: number }> {
+  try {
+    this.logInfo('Sending bulk email', { userCount: minerIds.length, subject });
 
-      let sentCount = 0;
-      let failedCount = 0;
+    let sentCount = 0;
+    let failedCount = 0;
 
-      for (const userId of userIds) {
-        try {
-          const result = await this.sendEmail({
-            to: userId,
-            subject,
-            message,
-            type: 'notification',
-          });
+    // Fetch all miners with their users at once
+    const miners = await this.minerRepository.findAll({
+      where: { id: minerIds },
+      include: [
+        {
+          model: User,
+          as: 'user'
+        }
+      ]
+    }) as MinerWithUser[];
 
-          if (result) {
-            sentCount++;
-          } else {
-            failedCount++;
-          }
-        } catch (error) {
-          this.logError(`Failed to send email to user ${userId}`, error);
+    for (const miner of miners) {
+      try {
+        if (!miner.user || !miner.user.email) {
+          this.logWarn(`Miner ${miner.id} has no associated user email`);
+          failedCount++;
+          continue;
+        }
+
+        const emailOptions = {
+          to: miner.user.email,
+          subject,
+          html: this.generateEmailTemplate(message, 'notification'),
+        };
+
+        const result = await EmailHelper.sendEmail(emailOptions);
+
+        if (result) {
+          sentCount++;
+        } else {
           failedCount++;
         }
+      } catch (error) {
+        this.logError(`Failed to send email to miner ${miner.id}`, error);
+        failedCount++;
       }
-
-      this.logInfo('Bulk email sending completed', { sent: sentCount, failed: failedCount });
-
-      return { sent: sentCount, failed: failedCount };
-    } catch (error) {
-      this.handleError(error, 'Failed to send bulk email');
     }
+
+    this.logInfo('Bulk email sending completed', { sent: sentCount, failed: failedCount });
+
+    return { sent: sentCount, failed: failedCount };
+  } catch (error) {
+    this.handleError(error, 'Failed to send bulk email');
   }
+}
+
+
 
   async sendEmailToAllMiners(subject: string, message: string): Promise<{ sent: number; failed: number }> {
     try {

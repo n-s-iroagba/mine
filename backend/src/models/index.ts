@@ -9,6 +9,7 @@ import KYC from './KYC';
 import KYCFee from './KYCFee';
 import Miner from './Miner';
 import Earning from './Earning';
+import Withdrawal from './WithdrawalRequest';
 
 // MiningContract - MiningServer relationship
 MiningContract.belongsTo(MiningServer, {
@@ -65,14 +66,23 @@ User.hasMany(Miner, {
   // as: 'subscriptions',
 });
 // Transaction relationships
-Transaction.belongsTo(User, {
+Transaction.belongsTo(Miner, {
   foreignKey: 'minerId',
   as: 'miner',
 });
 
-User.hasMany(Transaction, {
+Miner.hasMany(Transaction, {
   foreignKey: 'minerId',
   as: 'transactions',
+});
+Withdrawal.belongsTo(Miner, {
+  foreignKey: 'minerId',
+  as: 'miner',
+});
+
+Miner.hasMany(Withdrawal, {
+  foreignKey: 'minerId',
+  as: 'withdrawals',
 });
 
 // KYC relationships
@@ -114,6 +124,14 @@ Miner.hasMany(MiningSubscription,{
 MiningSubscription.belongsTo(Miner,{
   foreignKey:'minerId',
   as:'subMiner'
+})
+Withdrawal.hasOne(MiningSubscription,{
+  foreignKey:'subscriptionId',
+  as:'subscription'
+})
+MiningSubscription.hasMany(Withdrawal,{
+  foreignKey:'subscriptionId',
+  as:'withdrawals'
 })
 
 

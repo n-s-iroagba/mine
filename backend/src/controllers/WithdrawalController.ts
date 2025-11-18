@@ -24,6 +24,7 @@ class WithdrawalController {
         message: 'Withdrawal request created successfully',
       });
     } catch (error: any) {
+      console.error(error)
       res.status(400).json({
         success: false,
         message: error.message,
@@ -41,6 +42,7 @@ class WithdrawalController {
         data: withdrawals,
       });
     } catch (error: any) {
+      console.error(error)
       res.status(500).json({
         success: false,
         message: error.message,
@@ -58,6 +60,7 @@ class WithdrawalController {
         data: withdrawals,
       });
     } catch (error: any) {
+      console.error(error)
       res.status(500).json({
         success: false,
         message: error.message,
@@ -83,6 +86,7 @@ class WithdrawalController {
         data: withdrawal,
       });
     } catch (error: any) {
+      console.error(error)
       res.status(500).json({
         success: false,
         message: error.message,
@@ -114,6 +118,7 @@ class WithdrawalController {
         message: 'Withdrawal status updated successfully',
       });
     } catch (error: any) {
+      console.error(error)
       res.status(400).json({
         success: false,
         message: error.message,
@@ -142,6 +147,7 @@ class WithdrawalController {
         message: 'Withdrawal cancelled successfully',
       });
     } catch (error: any) {
+      console.error(error)
       res.status(400).json({
         success: false,
         message: error.message,
@@ -158,6 +164,7 @@ class WithdrawalController {
         data: stats,
       });
     } catch (error: any) {
+      console.error(error)
       res.status(500).json({
         success: false,
         message: error.message,

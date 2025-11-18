@@ -1,34 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { emailService } from '@/services';
-
+import { minerService } from '@/services/minerService';
 
 export default function EmailManagementPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'single' | 'bulk' | 'miners' | 'admins'>('single');
   const [formData, setFormData] = useState({
-    to: '',
+    to: 0,
     subject: '',
     message: '',
     type: 'general' as 'general' | 'notification' | 'alert',
   });
   const [bulkFormData, setBulkFormData] = useState({
-    userIds: [] as number[],
+    minerIds: [] as number[],
     subject: '',
     message: '',
   });
   const [groupFormData, setGroupFormData] = useState({
     subject: '',
     message: '',
+    minerId: undefined as number | undefined,
   });
   const [result, setResult] = useState<any>(null);
+
+  // Miner list state
+  const [miners, setMiners] = useState<any[]>([]);
+  const [minersLoading, setMinersLoading] = useState(false);
+
+  // Load miners when SINGLE or BULK tab is opened
+  useEffect(() => {
+    if (activeTab === 'bulk' || activeTab === 'single') loadMiners();
+  }, [activeTab]);
+
+  const loadMiners = async () => {
+    try {
+      setMinersLoading(true);
+      const minersData = await minerService.getAllMiners();
+      setMiners(minersData);
+    } catch (error) {
+      console.error('Failed to load miners:', error);
+    } finally {
+      setMinersLoading(false);
+    }
+  };
 
   const handleSingleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +60,7 @@ export default function EmailManagementPage() {
       const success = await emailService.sendEmail(formData);
       setResult({ success, message: success ? 'Email sent successfully' : 'Failed to send email' });
       if (success) {
-        setFormData({ to: '', subject: '', message: '', type: 'general' });
+        setFormData({ to: 0, subject: '', message: '', type: 'general' });
       }
     } catch (error: any) {
       setResult({ success: false, message: error.message });
@@ -55,13 +76,14 @@ export default function EmailManagementPage() {
 
     try {
       const result = await emailService.sendBulkEmail(bulkFormData);
-      setResult({ 
-        success: true, 
+      setResult({
+        success: true,
         message: `Bulk email sent: ${result.sent} successful, ${result.failed} failed`,
         details: result
       });
+
       if (result.sent > 0) {
-        setBulkFormData({ userIds: [], subject: '', message: '' });
+        setBulkFormData({ minerIds: [], subject: '', message: '' });
       }
     } catch (error: any) {
       setResult({ success: false, message: error.message });
@@ -77,13 +99,14 @@ export default function EmailManagementPage() {
 
     try {
       const result = await emailService.sendEmailToAllMiners(groupFormData);
-      setResult({ 
-        success: true, 
-        message: `Email sent to miners: ${result.sent} successful, ${result.failed} failed`,
+      setResult({
+        success: true,
+        message: `Email sent: ${result.sent} successful, ${result.failed} failed`,
         details: result
       });
+
       if (result.sent > 0) {
-        setGroupFormData({ subject: '', message: '' });
+        setGroupFormData({ subject: '', message: '', minerId: undefined });
       }
     } catch (error: any) {
       setResult({ success: false, message: error.message });
@@ -99,13 +122,14 @@ export default function EmailManagementPage() {
 
     try {
       const result = await emailService.sendEmailToAllAdmins(groupFormData);
-      setResult({ 
-        success: true, 
+      setResult({
+        success: true,
         message: `Email sent to admins: ${result.sent} successful, ${result.failed} failed`,
         details: result
       });
+
       if (result.sent > 0) {
-        setGroupFormData({ subject: '', message: '' });
+        setGroupFormData({ subject: '', message: '', minerId: undefined });
       }
     } catch (error: any) {
       setResult({ success: false, message: error.message });
@@ -118,16 +142,14 @@ export default function EmailManagementPage() {
     { id: 'single', label: 'Single Email', icon: '📧' },
     { id: 'bulk', label: 'Bulk Email', icon: '👥' },
     { id: 'miners', label: 'All Miners', icon: '⛏️' },
-    { id: 'admins', label: 'All Admins', icon: '👨‍💼' },
   ];
 
   return (
     <div className="space-y-6">
+
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Email Management</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Send emails to users and manage communications
-        </p>
+        <p className="mt-1 text-sm text-gray-600">Send emails to users and manage communications</p>
       </div>
 
       {/* Tabs */}
@@ -141,10 +163,7 @@ export default function EmailManagementPage() {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`
                     flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap
-                    ${activeTab === tab.id
-                      ? 'border-green-500 text-green-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }
+                    ${activeTab === tab.id ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
                   `}
                 >
                   <span>{tab.icon}</span>
@@ -156,7 +175,7 @@ export default function EmailManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Result Display */}
+      {/* Result */}
       {result && (
         <Card className={result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
           <CardContent className="pt-6">
@@ -177,69 +196,76 @@ export default function EmailManagementPage() {
         </Card>
       )}
 
-      {/* Single Email Form */}
+      {/* SINGLE EMAIL */}
       {activeTab === 'single' && (
         <Card>
           <CardHeader>
             <CardTitle>Send Single Email</CardTitle>
-            <CardDescription>
-              Send an email to a specific user by email address or user ID
-            </CardDescription>
+            <CardDescription>Send an email to a specific user</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSingleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Recipient"
-                  value={formData.to}
-                  onChange={(e) => setFormData(prev => ({ ...prev, to: e.target.value }))}
-                  placeholder="Email address or User ID"
-                  required
-                />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Type
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="general">General</option>
-                    <option value="notification">Notification</option>
-                    <option value="alert">Alert</option>
-                  </select>
-                </div>
+
+              {/* ---- NEW MINER DROPDOWN ADDED HERE ---- */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Miner
+                </label>
+                <select
+                  disabled={minersLoading}
+                  onChange={(e) => {
+                    const id = Number(e.target.value);
+                    const miner = miners.find((m) => m.id === id);
+                    setFormData((prev) => ({
+                      ...prev,
+                      to: miner?.id || ''
+                    }));
+                  }}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">-- Choose Miner --</option>
+                  {miners.map((m: any) => (
+                    <option key={m.id} value={m.id}>
+                      {m.fullName || m.email || ` ${m.firstname} ${m.lastname}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+           
+
+          
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email Type</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as any }))}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="general">General</option>
+                  <option value="notification">Notification</option>
+                  <option value="alert">Alert</option>
+                </select>
               </div>
 
               <Input
                 label="Subject"
                 value={formData.subject}
                 onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                placeholder="Email subject line"
+                placeholder="Email subject..."
                 required
               />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  value={formData.message}
-                  onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
-                  rows={6}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Enter your email message here..."
-                  required
-                />
-              </div>
+              <textarea
+                value={formData.message}
+                onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                rows={6}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                placeholder="Email message..."
+                required
+              />
 
-              <Button
-                type="submit"
-                loading={loading}
-                disabled={loading}
-                className="w-full sm:w-auto"
-              >
+              <Button type="submit" loading={loading} disabled={loading}>
                 Send Email
               </Button>
             </form>
@@ -247,78 +273,79 @@ export default function EmailManagementPage() {
         </Card>
       )}
 
-      {/* Bulk Email Form */}
+      {/* BULK EMAIL */}
       {activeTab === 'bulk' && (
         <Card>
           <CardHeader>
             <CardTitle>Send Bulk Email</CardTitle>
-            <CardDescription>
-              Send email to multiple users by their user IDs
-            </CardDescription>
+            <CardDescription>Select miners to send bulk email</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleBulkSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  User IDs (comma-separated)
+                  Select Miners
                 </label>
-                <Input
-                  value={bulkFormData.userIds.join(', ')}
-                  onChange={(e) => setBulkFormData(prev => ({ 
-                    ...prev, 
-                    userIds: e.target.value.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
-                  }))}
-                  placeholder="1, 2, 3, 4, 5"
-                  required
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Enter user IDs separated by commas
-                </p>
+
+                <div className="max-h-64 overflow-y-auto border rounded-md p-3 space-y-2">
+                  {minersLoading && <p className="text-sm text-gray-500">Loading miners...</p>}
+                  {!minersLoading && miners.length === 0 && (
+                    <p className="text-sm text-gray-500">No miners found.</p>
+                  )}
+                  {!minersLoading &&
+                    miners.map((m: any) => (
+                      <label key={m.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={bulkFormData.minerIds.includes(m.id)}
+                          onChange={(e) => {
+                            setBulkFormData((prev) => ({
+                              ...prev,
+                              minerIds: e.target.checked
+                                ? [...prev.minerIds, m.id]
+                                : prev.minerIds.filter((id) => id !== m.id)
+                            }));
+                          }}
+                        />
+                        <span>{m.fullName || m.email || `Miner ${m.id}`}</span>
+                      </label>
+                    ))}
+                </div>
               </div>
 
               <Input
                 label="Subject"
                 value={bulkFormData.subject}
                 onChange={(e) => setBulkFormData(prev => ({ ...prev, subject: e.target.value }))}
-                placeholder="Email subject line"
                 required
               />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  value={bulkFormData.message}
-                  onChange={(e) => setBulkFormData(prev => ({ ...prev, message: e.target.value }))}
-                  rows={6}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Enter your email message here..."
-                  required
-                />
-              </div>
+              <textarea
+                value={bulkFormData.message}
+                onChange={(e) => setBulkFormData(prev => ({ ...prev, message: e.target.value }))}
+                rows={6}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                required
+              />
 
               <Button
                 type="submit"
                 loading={loading}
-                disabled={loading || bulkFormData.userIds.length === 0}
-                className="w-full sm:w-auto"
+                disabled={loading || bulkFormData.minerIds.length === 0}
               >
-                Send Bulk Email ({bulkFormData.userIds.length} users)
+                Send Bulk Email ({bulkFormData.minerIds.length} selected)
               </Button>
             </form>
           </CardContent>
         </Card>
       )}
 
-      {/* All Miners Email Form */}
+      {/* ALL MINERS */}
       {activeTab === 'miners' && (
         <Card>
           <CardHeader>
             <CardTitle>Email All Miners</CardTitle>
-            <CardDescription>
-              Send email to all registered miners on the platform
-            </CardDescription>
+            <CardDescription>Send email to all registered miners</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleMinersSubmit} className="space-y-6">
@@ -326,30 +353,18 @@ export default function EmailManagementPage() {
                 label="Subject"
                 value={groupFormData.subject}
                 onChange={(e) => setGroupFormData(prev => ({ ...prev, subject: e.target.value }))}
-                placeholder="Email subject line"
                 required
               />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  value={groupFormData.message}
-                  onChange={(e) => setGroupFormData(prev => ({ ...prev, message: e.target.value }))}
-                  rows={6}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Enter your email message here..."
-                  required
-                />
-              </div>
+              <textarea
+                value={groupFormData.message}
+                onChange={(e) => setGroupFormData(prev => ({ ...prev, message: e.target.value }))}
+                rows={6}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                required
+              />
 
-              <Button
-                type="submit"
-                loading={loading}
-                disabled={loading}
-                className="w-full sm:w-auto"
-              >
+              <Button type="submit" loading={loading} disabled={loading}>
                 Send to All Miners
               </Button>
             </form>
@@ -357,14 +372,12 @@ export default function EmailManagementPage() {
         </Card>
       )}
 
-      {/* All Admins Email Form */}
+      {/* ADMINS */}
       {activeTab === 'admins' && (
         <Card>
           <CardHeader>
             <CardTitle>Email All Admins</CardTitle>
-            <CardDescription>
-              Send email to all platform administrators
-            </CardDescription>
+            <CardDescription>Send email to all admins</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAdminsSubmit} className="space-y-6">
@@ -372,30 +385,18 @@ export default function EmailManagementPage() {
                 label="Subject"
                 value={groupFormData.subject}
                 onChange={(e) => setGroupFormData(prev => ({ ...prev, subject: e.target.value }))}
-                placeholder="Email subject line"
                 required
               />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message
-                </label>
-                <textarea
-                  value={groupFormData.message}
-                  onChange={(e) => setGroupFormData(prev => ({ ...prev, message: e.target.value }))}
-                  rows={6}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Enter your email message here..."
-                  required
-                />
-              </div>
+              <textarea
+                value={groupFormData.message}
+                onChange={(e) => setGroupFormData(prev => ({ ...prev, message: e.target.value }))}
+                rows={6}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                required
+              />
 
-              <Button
-                type="submit"
-                loading={loading}
-                disabled={loading}
-                className="w-full sm:w-auto"
-              >
+              <Button type="submit" loading={loading} disabled={loading}>
                 Send to All Admins
               </Button>
             </form>
@@ -403,62 +404,6 @@ export default function EmailManagementPage() {
         </Card>
       )}
 
-      {/* Email Templates */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Templates</CardTitle>
-          <CardDescription>
-            Pre-built email templates for common communications
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              {
-                title: 'Welcome Email',
-                description: 'Welcome new miners to the platform',
-                subject: 'Welcome to Satoshi Vertex!',
-                message: 'Welcome to Satoshi Vertex! We\'re excited to have you join our mining community...'
-              },
-              {
-                title: 'Payment Received',
-                description: 'Confirm payment receipt',
-                subject: 'Payment Received - Satoshi Vertex',
-                message: 'We have successfully received your payment. Your mining subscription is now active...'
-              },
-              {
-                title: 'KYC Approved',
-                description: 'Notify KYC approval',
-                subject: 'KYC Verification Approved',
-                message: 'Great news! Your KYC verification has been approved. You now have full access to all platform features...'
-              },
-              {
-                title: 'Maintenance Notice',
-                description: 'Platform maintenance announcement',
-                subject: 'Scheduled Maintenance Notice',
-                message: 'We will be performing scheduled maintenance on our platform...'
-              },
-            ].map((template, index) => (
-              <div
-                key={index}
-                className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors cursor-pointer"
-                onClick={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    subject: template.subject,
-                    message: template.message
-                  }));
-                  setActiveTab('single');
-                }}
-              >
-                <h4 className="font-medium text-gray-900 mb-1">{template.title}</h4>
-                <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                <Badge variant="default">Click to use</Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -116,9 +116,9 @@ export default function KYCFeeManagementPage() {
       await kycFeeService.createKYCFee({
         minerId: parseInt(newFeeData.minerId),
         amount: amount,
-  
+
       });
-      
+
       await loadKYCFees();
       await loadStats();
       setIsCreateDialogOpen(false);
@@ -157,9 +157,9 @@ export default function KYCFeeManagementPage() {
     {
       key: 'amountInUSD',
       label: 'Amount',
-      render: (value: number) => (
+      render: (value: any, row: KYCFee) => (
         <span className="font-medium text-green-600">
-          {formatCurrency(value)}
+        ${row.amount}
         </span>
       ),
     },
@@ -169,10 +169,10 @@ export default function KYCFeeManagementPage() {
       render: (value: string, row: KYCFee) => (
         <div className="space-y-2">
           <Badge variant={
-            value === 'paid' ? 'secondary' : 
-            value === 'pending' ? 'warning' : 'default'
+            value === 'paid' ? 'secondary' :
+              value === 'pending' ? 'warning' : 'default'
           }>
-            {value.charAt(0).toUpperCase() + value.slice(1)}
+            {value}
           </Badge>
           {value === 'pending' && (
             <Button
@@ -304,11 +304,10 @@ export default function KYCFeeManagementPage() {
               <button
                 key={filter.value}
                 onClick={() => setStatusFilter(filter.value)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  statusFilter === filter.value
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${statusFilter === filter.value
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {filter.label} ({filter.count})
               </button>
@@ -351,13 +350,13 @@ export default function KYCFeeManagementPage() {
               Create a new KYC verification fee for a miner
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="miner">Select Miner *</Label>
               <Select
                 value={newFeeData.minerId}
-                onValueChange={(value) => setNewFeeData({...newFeeData, minerId: value})}
+                onValueChange={(value) => setNewFeeData({ ...newFeeData, minerId: value })}
                 disabled={minersLoading}
               >
                 <SelectTrigger>
@@ -387,7 +386,7 @@ export default function KYCFeeManagementPage() {
                 id="amount"
                 type="number"
                 value={newFeeData.amountInUSD}
-                onChange={(e) => setNewFeeData({...newFeeData, amountInUSD: e.target.value})}
+                onChange={(e) => setNewFeeData({ ...newFeeData, amountInUSD: e.target.value })}
                 placeholder="Enter amount in USD"
                 min="0"
                 step="0.01"
@@ -399,7 +398,7 @@ export default function KYCFeeManagementPage() {
               <Input
                 id="description"
                 value={newFeeData.description}
-                onChange={(e) => setNewFeeData({...newFeeData, description: e.target.value})}
+                onChange={(e) => setNewFeeData({ ...newFeeData, description: e.target.value })}
                 placeholder="Fee description"
               />
             </div>

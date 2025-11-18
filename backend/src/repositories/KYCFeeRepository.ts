@@ -1,4 +1,4 @@
-
+import { Op } from "sequelize";
 import { KYCFee } from '../models';
 import { BaseRepository } from './BaseRepository';
 
@@ -29,27 +29,33 @@ export class KYCFeeRepository extends BaseRepository<KYCFee> implements IKYCFeeR
     }
   }
 
-  async findByPaidStatus(isPaid: boolean): Promise<KYCFee[]> {
-    try {
-      return await this.findAll({
-        where: { isPaid },
-        include: [
-          {
-            association: 'miner',
-          
-          },
-        ],
-        order: [['createdAt', 'DESC']],
-      });
-    } catch (error) {
-      throw new Error(`Error finding KYC fees by paid status ${isPaid}: ${error}`);
-    }
+
+
+async findByPaidStatus(isPaid: boolean): Promise<KYCFee[]> {
+  try {
+    return await this.findAll({
+      where: {
+        paidAt: isPaid
+          ? { [Op.not]: null } // paidAt is NOT null
+          : null               // paidAt is null
+      },
+      include: [
+        {
+          association: 'miner',
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+  } catch (error) {
+    throw new Error(`Error finding KYC fees by paid status ${isPaid}: ${error}`);
   }
+}
+
 
   async markAsPaid(id: number): Promise<KYCFee|null> {
     try {
       return await this.update(id, {
-        isPaid: true,
+      
         paidAt: new Date(),
       });
     } catch (error) {

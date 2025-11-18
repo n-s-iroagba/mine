@@ -47,9 +47,7 @@ class WithdrawalService {
       throw new Error('Withdrawal amount exceeds available deposit');
     }
 
-    if (data.type === 'earnings' && data.amount > subscription.earnings) {
-      throw new Error('Withdrawal amount exceeds available earnings');
-    }
+  
 
     if (data.amount <= 0) {
       throw new Error('Withdrawal amount must be greater than 0');
@@ -101,22 +99,13 @@ class WithdrawalService {
         {
           model: Miner,
           as: 'miner',
-          include: [{
-            model: User,
-            as: 'user',
-            attributes: ['id', 'username', 'email'],
-          }],
         },
         {
           model: MiningSubscription,
           as: 'subscription',
           attributes: ['id', 'miningContractId'],
         },
-        {
-          model: User,
-          as: 'processor',
-          attributes: ['id', 'username'],
-        },
+     
       ],
       order: [['createdAt', 'DESC']],
     });
@@ -142,9 +131,7 @@ class WithdrawalService {
         throw new Error('Insufficient deposit balance for withdrawal');
       }
 
-      if (withdrawal.type === 'earnings' && withdrawal.amount > subscription.earnings) {
-        throw new Error('Insufficient earnings balance for withdrawal');
-      }
+    
     }
 
     return this.withdrawalRepository.update(id, data);

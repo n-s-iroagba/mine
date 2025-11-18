@@ -11,6 +11,7 @@ import kycFeeRoutes from './kycFee';
 import emailRoutes from './email';
 import minerRoutes from './miner'
 import earningRoutes from './earnings'
+import withdrawalRoute from './withdrawalRoutes'
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use('/transactions', transactionRoutes);
 router.use('/kyc', kycRoutes);
 router.use('/kyc-fees', kycFeeRoutes);
 router.use('/email', emailRoutes);
+router.use('/withdrawals',withdrawalRoute)
 
 // Health check route
 router.get('/health', (_, res) => {
